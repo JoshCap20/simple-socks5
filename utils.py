@@ -23,7 +23,7 @@ def generate_host_unreachable_reply():
 
 def generate_address_type_not_supported_reply():
     return generate_failed_reply(
-        AddressTypeCode.IPv4.val, ReplyCode.ADDRESS_TYPE_NOT_SUPPORTED
+        AddressTypeCode.IPv4, ReplyCode.ADDRESS_TYPE_NOT_SUPPORTED
     )
 
 

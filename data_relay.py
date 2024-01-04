@@ -9,14 +9,14 @@ class DataRelay:
         try:
             while True:
                 # Wait until client or remote is available for read
-                r, w, e = select.select([client_socket, remote_socket], [], [])
+                a, b, c = select.select([client_socket, remote_socket], [], [])
 
-                if client_socket in r:
+                if client_socket in a:
                     data = client_socket.recv(4096)
                     if remote_socket.send(data) <= 0:
                         break
 
-                if remote_socket in r:
+                if remote_socket in a:
                     data = remote_socket.recv(4096)
                     if client_socket.send(data) <= 0:
                         break
