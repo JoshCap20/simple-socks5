@@ -1,6 +1,6 @@
-import sys
 import select
 import socket
+from logger import logger
 
 
 class DataRelay:
@@ -22,9 +22,9 @@ class DataRelay:
                         break
 
         except BrokenPipeError as e:
-            print(f"Caught BrokenPipeError: {e}", file=sys.stderr)
+            logger.error(f"Caught BrokenPipeError: {e}")
         except ConnectionResetError as e:
-            print(f"Caught ConnectionResetError: {e}", file=sys.stderr)
+            logger.error(f"Caught ConnectionResetError: {e}")
         finally:
             client_socket.close()
             remote_socket.close()

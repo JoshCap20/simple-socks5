@@ -1,4 +1,3 @@
-import sys
 import struct
 import socket
 from socketserver import ThreadingMixIn, TCPServer, StreamRequestHandler
@@ -7,6 +6,7 @@ from constants import SOCKS_VERSION
 from request_handler import RequestHandler
 from data_relay import DataRelay
 from utils import generate_general_socks_server_failure_reply
+from logger import logger
 
 
 class ThreadingTCPServer(ThreadingMixIn, TCPServer):
@@ -49,7 +49,7 @@ class SocksProxy(StreamRequestHandler):
             reply = struct.pack("!BBBBIH", SOCKS_VERSION, 0, 0, 1, addr, port)
 
         except Exception as e:
-            print(e, file=sys.stderr)
+            logger.error(f"Exception: {e}")
             reply = generate_general_socks_server_failure_reply()
 
         self.connection.sendall(reply)
