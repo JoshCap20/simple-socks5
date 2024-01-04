@@ -1,4 +1,4 @@
-from handler import SocksProxy
+from server import SocksProxy
 from constants import HOST_NAME, PORT_NUMBER
 from server import ThreadingTCPServer
 
