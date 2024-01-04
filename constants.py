@@ -13,7 +13,7 @@ class MethodCodes(Enum):
     NO_ACCEPTABLE_METHODS = 0xFF
 
 
-class ReplyCode(Enum):
+class ReplyCodes(Enum):
     SUCCEEDED = 0x00
     GENERAL_SOCKS_SERVER_FAILURE = 0x01
     CONNECTION_NOT_ALLOWED_BY_RULESET = 0x02
@@ -26,7 +26,7 @@ class ReplyCode(Enum):
     UNASSIGNED = 0x09
 
 
-class AddressTypeCode(Enum):
+class AddressTypeCodes(Enum):
     IPv4 = 0x01
     DOMAIN_NAME = 0x03
     IPv6 = 0x04
