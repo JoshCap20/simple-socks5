@@ -30,5 +30,7 @@ class DataRelay:
         except ConnectionResetError as e:
             logger.error(f"Caught ConnectionResetError: {e}")
         finally:
+            client_socket.shutdown(socket.SHUT_RDWR)
+            remote_socket.shutdown(socket.SHUT_RDWR)
             client_socket.close()
             remote_socket.close()
