@@ -71,5 +71,10 @@ class SocksProxy(StreamRequestHandler):
             logger.error(f"Exception: {e}")
             reply: bytes = generate_general_socks_server_failure_reply()
         finally:
-            self.connection.sendall(reply)
-            self.server.close_request(self.request)
+            try:
+                if reply:
+                    self.connection.sendall(reply)
+            except BrokenPipeError as e:
+                logger.error(f"Error sending reply: {e}")
+            finally:
+                self.server.close_request(self.request)
