@@ -9,17 +9,19 @@ class DataRelay:
         try:
             while True:
                 # Wait until client or remote is available for read
-                a, b, c = select.select([client_socket, remote_socket], [], [])
+                readable_sockets, _, _ = select.select(
+                    [client_socket, remote_socket], [], []
+                )
 
-                if client_socket in a:
+                if client_socket in readable_sockets:
                     data = client_socket.recv(4096)
                     if remote_socket.send(data) <= 0:
-                        break
+                        return
 
-                if remote_socket in a:
+                if remote_socket in readable_sockets:
                     data = remote_socket.recv(4096)
                     if client_socket.send(data) <= 0:
-                        break
+                        return
 
         except BrokenPipeError as e:
             logger.error(f"Caught BrokenPipeError: {e}")
