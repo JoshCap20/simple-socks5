@@ -34,10 +34,11 @@ class SocksProxy(StreamRequestHandler):
 
         address, port = RequestHandler.parse_address_and_port(
             self.connection, address_type
-        )
+        )  # type: ignore
+
+        reply: bytes | None = None
 
         try:
-            reply = b""
             if cmd == 1:
                 # CONNECT
                 remote: socket.socket = socket.socket(
@@ -54,22 +55,26 @@ class SocksProxy(StreamRequestHandler):
                 DataRelay.relay_data(self.connection, remote)
             elif cmd == 2:
                 # TODO: Implement BIND
-                self.server.close_request(self.request)
+                reply = generate_command_not_supported_reply()
             elif cmd == 3:
                 # TODO: Implement UDP ASSOCIATE
-                self.server.close_request(self.request)
+                reply = generate_command_not_supported_reply()
             else:
                 reply = generate_command_not_supported_reply()
-                self.server.close_request(self.request)
+
         except ConnectionRefusedError:
             logger.error("Connection refused")
-            reply: bytes = generate_connection_refused_reply()
+            reply = generate_connection_refused_reply()
         except socket.gaierror:
             logger.error("Host unreachable")
-            reply: bytes = generate_host_unreachable_reply()
+            reply = generate_host_unreachable_reply()
         except Exception as e:
             logger.error(f"Exception: {e}")
-            reply: bytes = generate_general_socks_server_failure_reply()
+            reply = generate_general_socks_server_failure_reply()
         finally:
-            self.connection.sendall(reply)
-            self.server.close_request(self.request)
+            if reply is not None:
+                try:
+                    self.connection.sendall(reply)
+                except BrokenPipeError as e:
+                    logger.error(f"Error sending reply: {e}")
+            self.server.shutdown_request(self.request)
