@@ -45,13 +45,13 @@ class RequestHandler:
     @staticmethod
     def parse_address_and_port(connection: socket.socket, address_type: int) -> tuple:
         try:
-            if address_type == AddressTypeCodes.IPv4:
+            if address_type == AddressTypeCodes.IPv4.value:
                 address = socket.inet_ntoa(connection.recv(4))
-            elif address_type == AddressTypeCodes.DOMAIN_NAME:
+            elif address_type == AddressTypeCodes.DOMAIN_NAME.value:
                 domain_length = connection.recv(1)[0]
                 address = connection.recv(domain_length)
                 address = socket.gethostbyname(address)
-            elif address_type == AddressTypeCodes.IPv6:
+            elif address_type == AddressTypeCodes.IPv6.value:
                 address = socket.inet_ntop(socket.AF_INET6, connection.recv(16))
             else:
                 return None, None
@@ -63,8 +63,7 @@ class RequestHandler:
             return None, None
 
     @staticmethod
-    def get_address_type(connection: socket.socket) -> AddressTypeCodes | None:
-        _, _, address_type = RequestHandler.parse_request(connection)
+    def get_address_type(address_type: int) -> AddressTypeCodes | None:
         if address_type == 1:
             return AddressTypeCodes.IPv4
         elif address_type == 3:
