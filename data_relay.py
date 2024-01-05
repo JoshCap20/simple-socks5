@@ -6,8 +6,8 @@ from logger import logger
 class DataRelay:
     @staticmethod
     def relay_data(client_socket: socket.socket, remote_socket: socket.socket) -> None:
-        client_address = client_socket.getpeername()
-        remote_address = remote_socket.getpeername()
+        client_address: socket._RetAddress = client_socket.getpeername()
+        remote_address: socket._RetAddress = remote_socket.getpeername()
 
         try:
             while True:
@@ -26,7 +26,9 @@ class DataRelay:
 
                     data: bytes = sock.recv(4096)
                     if not data:
-                        logger.info("Connection closed by the remote host.")
+                        logger.info(
+                            f"Closing connection: {sock.getpeername()} <-> {other_address}"
+                        )
                         return
                     while data:
                         sent: int = other_sock.send(data)
