@@ -34,7 +34,7 @@ class SocksProxy(StreamRequestHandler):
 
         address, port = RequestHandler.parse_address_and_port(
             self.connection, address_type
-        )  # type: ignore
+        )
 
         reply: bytes | None = None
 
@@ -48,29 +48,37 @@ class SocksProxy(StreamRequestHandler):
                 bind_address: socket._RetAddress = remote.getsockname()
 
                 success_reply = generate_succeeded_reply(
-                    AddressTypeCodes.IPv4, bind_address[0], bind_address[1]
+                    AddressTypeCodes(address_type), bind_address[0], bind_address[1]
                 )
                 self.connection.sendall(success_reply)
 
                 DataRelay.relay_data(self.connection, remote)
             elif cmd == 2:
                 # TODO: Implement BIND
-                reply = generate_command_not_supported_reply()
+                reply = generate_command_not_supported_reply(
+                    AddressTypeCodes(address_type)
+                )
             elif cmd == 3:
                 # TODO: Implement UDP ASSOCIATE
-                reply = generate_command_not_supported_reply()
+                reply = generate_command_not_supported_reply(
+                    AddressTypeCodes(address_type)
+                )
             else:
-                reply = generate_command_not_supported_reply()
+                reply = generate_command_not_supported_reply(
+                    AddressTypeCodes(address_type)
+                )
 
         except ConnectionRefusedError:
             logger.error("Connection refused")
-            reply = generate_connection_refused_reply()
+            reply = generate_connection_refused_reply(AddressTypeCodes(address_type))
         except socket.gaierror:
             logger.error("Host unreachable")
-            reply = generate_host_unreachable_reply()
+            reply = generate_host_unreachable_reply(AddressTypeCodes(address_type))
         except Exception as e:
             logger.error(f"Exception: {e}")
-            reply = generate_general_socks_server_failure_reply()
+            reply = generate_general_socks_server_failure_reply(
+                AddressTypeCodes(address_type)
+            )
         finally:
             if reply is not None:
                 try:
