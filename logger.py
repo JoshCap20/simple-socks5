@@ -2,7 +2,7 @@ import logging
 
 
 def setup_logger() -> logging.Logger:
-    logger = logging.getLogger("socks_server")
+    logger = logging.getLogger("SimpleSocks5")
     logger.setLevel(logging.DEBUG)
 
     # Console Handler for logging info and above
