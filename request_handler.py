@@ -12,10 +12,10 @@ class RequestHandler:
             return False
 
         methods = connection.recv(nmethods)
-        return RequestHandler.authenticate(connection, methods)
+        return RequestHandler._authenticate(connection, methods)
 
     @staticmethod
-    def authenticate(connection: socket.socket, methods) -> bool:
+    def _authenticate(connection: socket.socket, methods) -> bool:
         # TODO: Implement authentication
         connection.sendall(struct.pack("!BB", SOCKS_VERSION, 0))
         return True
