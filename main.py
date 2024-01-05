@@ -1,18 +1,17 @@
 import sys
 import signal
+import argparse
 
-from server import SocksProxy
-from constants import HOST_NAME, PORT_NUMBER
-from server import ThreadingTCPServer
 from logger import logger
+from server import ThreadingTCPServer, SocksProxy
 
 
-def main():
+def main(host: str, port: int):
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
-    with ThreadingTCPServer((HOST_NAME, PORT_NUMBER), SocksProxy) as server:
-        logger.info(f"Server started on {HOST_NAME}:{PORT_NUMBER}")
+    with ThreadingTCPServer((host, port), SocksProxy) as server:
+        logger.info(f"Server started on {host}:{port}")
         try:
             server.serve_forever()
         except KeyboardInterrupt:
@@ -27,4 +26,16 @@ def signal_handler(signum, frame):
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="SOCKS5 Proxy Server")
+    parser.add_argument(
+        "--host",
+        type=str,
+        default="localhost",
+        help="Host address for the SOCKS server",
+    )
+    parser.add_argument(
+        "--port", type=int, default=9999, help="Port number for the SOCKS server"
+    )
+    args = parser.parse_args()
+
+    main(args.host, args.port)
