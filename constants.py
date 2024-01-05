@@ -1,9 +1,6 @@
 from enum import Enum
 
-SOCKS_VERSION = 5
-
-HOST_NAME: str = "localhost"
-PORT_NUMBER: int = 9999
+SOCKS_VERSION: int = 5
 
 
 class MethodCodes(Enum):
