@@ -13,20 +13,24 @@ class DataRelay:
                     [client_socket, remote_socket], [], []
                 )
 
-                if client_socket in readable_sockets:
-                    data = client_socket.recv(4096)
-                    if remote_socket.send(data) <= 0:
+                for sock in readable_sockets:
+                    other_sock: socket.socket = (
+                        remote_socket if sock is client_socket else client_socket
+                    )
+                    data: bytes = sock.recv(4096)
+                    if not data:
+                        logger.info("Connection closed by the remote host.")
                         return
-
-                if remote_socket in readable_sockets:
-                    data = remote_socket.recv(4096)
-                    if client_socket.send(data) <= 0:
-                        return
+                    while data:
+                        sent = other_sock.send(data)
+                        data = data[sent:]
 
         except BrokenPipeError as e:
             logger.error(f"Caught BrokenPipeError: {e}")
         except ConnectionResetError as e:
             logger.error(f"Caught ConnectionResetError: {e}")
         finally:
+            client_socket.shutdown(socket.SHUT_RDWR)
+            remote_socket.shutdown(socket.SHUT_RDWR)
             client_socket.close()
             remote_socket.close()
