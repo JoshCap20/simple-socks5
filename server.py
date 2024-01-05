@@ -1,12 +1,18 @@
-import sys
 import struct
 import socket
 from socketserver import ThreadingMixIn, TCPServer, StreamRequestHandler
 
-from constants import SOCKS_VERSION
+from constants import SOCKS_VERSION, AddressTypeCodes
 from request_handler import RequestHandler
 from data_relay import DataRelay
-from utils import generate_general_socks_server_failure_reply
+from utils import (
+    generate_general_socks_server_failure_reply,
+    generate_command_not_supported_reply,
+    generate_connection_refused_reply,
+    generate_host_unreachable_reply,
+    generate_succeeded_reply,
+)
+from logger import logger
 
 
 class ThreadingTCPServer(ThreadingMixIn, TCPServer):
@@ -32,9 +38,17 @@ class SocksProxy(StreamRequestHandler):
 
         try:
             if cmd == 1:
-                remote = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                # CONNECT
+                remote: socket.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 remote.connect((address, port))
-                bind_address = remote.getsockname()
+                bind_address: socket._RetAddress = remote.getsockname()
+
+                success_reply = generate_succeeded_reply(
+                    AddressTypeCodes.IPv4, bind_address[0], bind_address[1]
+                )
+                self.connection.sendall(success_reply)
+
+                DataRelay.relay_data(self.connection, remote)
             elif cmd == 2:
                 # TODO: Implement BIND
                 self.server.close_request(self.request)
@@ -42,19 +56,17 @@ class SocksProxy(StreamRequestHandler):
                 # TODO: Implement UDP ASSOCIATE
                 self.server.close_request(self.request)
             else:
+                self.connection.sendall(generate_command_not_supported_reply())
                 self.server.close_request(self.request)
-
-            addr = struct.unpack("!I", socket.inet_aton(bind_address[0]))[0]
-            port = bind_address[1]
-            reply = struct.pack("!BBBBIH", SOCKS_VERSION, 0, 0, 1, addr, port)
-
+        except ConnectionRefusedError:
+            logger.error("Connection refused")
+            reply: bytes = generate_connection_refused_reply()
+        except socket.gaierror:
+            logger.error("Host unreachable")
+            reply: bytes = generate_host_unreachable_reply()
         except Exception as e:
-            print(e, file=sys.stderr)
-            reply = generate_general_socks_server_failure_reply()
-
-        self.connection.sendall(reply)
-
-        if reply[1] == 0 and cmd == 1:
-            DataRelay.relay_data(self.connection, remote)
-
-        self.server.close_request(self.request)
+            logger.error(f"Exception: {e}")
+            reply: bytes = generate_general_socks_server_failure_reply()
+        finally:
+            self.connection.sendall(reply)
+            self.server.close_request(self.request)

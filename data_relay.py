@@ -1,6 +1,6 @@
-import sys
 import select
 import socket
+from logger import logger
 
 
 class DataRelay:
@@ -9,22 +9,24 @@ class DataRelay:
         try:
             while True:
                 # Wait until client or remote is available for read
-                a, b, c = select.select([client_socket, remote_socket], [], [])
+                readable_sockets, _, _ = select.select(
+                    [client_socket, remote_socket], [], []
+                )
 
-                if client_socket in a:
+                if client_socket in readable_sockets:
                     data = client_socket.recv(4096)
                     if remote_socket.send(data) <= 0:
-                        break
+                        return
 
-                if remote_socket in a:
+                if remote_socket in readable_sockets:
                     data = remote_socket.recv(4096)
                     if client_socket.send(data) <= 0:
-                        break
+                        return
 
         except BrokenPipeError as e:
-            print(f"Caught BrokenPipeError: {e}", file=sys.stderr)
+            logger.error(f"Caught BrokenPipeError: {e}")
         except ConnectionResetError as e:
-            print(f"Caught ConnectionResetError: {e}", file=sys.stderr)
+            logger.error(f"Caught ConnectionResetError: {e}")
         finally:
             client_socket.close()
             remote_socket.close()
