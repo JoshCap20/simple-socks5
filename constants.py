@@ -2,6 +2,9 @@ from enum import Enum
 
 SOCKS_VERSION: int = 5
 
+USERNAME: str = "myusername"
+PASSWORD: str = "mypassword"
+
 
 class MethodCodes(Enum):
     NO_AUTHENTICATION_REQUIRED = 0x00

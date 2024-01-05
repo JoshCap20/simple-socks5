@@ -34,7 +34,7 @@ class SocksProxy(StreamRequestHandler):
 
         address, port = RequestHandler.parse_address_and_port(
             self.connection, address_type
-        )  # type: ignore
+        )
 
         reply: bytes | None = None
 
@@ -60,6 +60,7 @@ class SocksProxy(StreamRequestHandler):
                 # TODO: Implement UDP ASSOCIATE
                 reply = generate_command_not_supported_reply()
             else:
+                # Invalid command
                 reply = generate_command_not_supported_reply()
 
         except ConnectionRefusedError:
