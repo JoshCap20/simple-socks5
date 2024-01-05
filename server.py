@@ -37,9 +37,12 @@ class SocksProxy(StreamRequestHandler):
         )
 
         try:
+            reply = b""
             if cmd == 1:
                 # CONNECT
-                remote: socket.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                remote: socket.socket = socket.socket(
+                    socket.AF_INET, socket.SOCK_STREAM
+                )
                 remote.connect((address, port))
                 bind_address: socket._RetAddress = remote.getsockname()
 
@@ -56,7 +59,7 @@ class SocksProxy(StreamRequestHandler):
                 # TODO: Implement UDP ASSOCIATE
                 self.server.close_request(self.request)
             else:
-                self.connection.sendall(generate_command_not_supported_reply())
+                reply = generate_command_not_supported_reply()
                 self.server.close_request(self.request)
         except ConnectionRefusedError:
             logger.error("Connection refused")
