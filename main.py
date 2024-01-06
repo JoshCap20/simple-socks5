@@ -1,5 +1,3 @@
-import sys
-import signal
 import argparse
 
 from logger import logger
@@ -7,8 +5,6 @@ from server import ThreadingTCPServer, SocksProxy
 
 
 def main(host: str, port: int):
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
 
     with ThreadingTCPServer((host, port), SocksProxy) as server:
         logger.info(f"Server started on {host}:{port}")
@@ -18,11 +14,7 @@ def main(host: str, port: int):
             pass
         finally:
             logger.info("Server shutting down.")
-
-
-def signal_handler(signum, frame):
-    logger.info(f"Caught signal {signum}")
-    sys.exit(0)
+            server.server_close()
 
 
 if __name__ == "__main__":
@@ -36,6 +28,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--port", type=int, default=9999, help="Port number for the SOCKS server"
     )
+    
     args = parser.parse_args()
 
     main(args.host, args.port)
