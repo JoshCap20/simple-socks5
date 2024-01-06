@@ -1,10 +1,10 @@
 import socket
 from socketserver import ThreadingMixIn, TCPServer, StreamRequestHandler
 
-from constants import CommandCodes
-from request_handler import RequestHandler
-from data_relay import DataRelay
-from utils import (
+from .constants import CommandCodes
+from .request_handler import RequestHandler
+from .data_relay import DataRelay
+from .utils import (
     generate_general_socks_server_failure_reply,
     generate_command_not_supported_reply,
     generate_connection_refused_reply,
@@ -12,8 +12,8 @@ from utils import (
     generate_succeeded_reply,
     generate_socket
 )
-from logger import get_logger
-from models import Request, Address
+from .logger import get_logger
+from .models import Request, Address
 
 logger = get_logger(__name__)
 

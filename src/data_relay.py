@@ -1,7 +1,8 @@
 import os
 import select
 import socket
-from logger import get_logger
+
+from .logger import get_logger
 
 verbose = os.environ.get("VERBOSE", "0") == "1"
 logger = get_logger(__name__, verbose=verbose)
