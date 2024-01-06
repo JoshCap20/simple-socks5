@@ -9,14 +9,15 @@ from .utils import map_address_type_to_enum
 
 logger = get_logger(__name__)
 
+
 class RequestHandler:
     connection: socket.socket
     client_authenticated: bool
-    
+
     def __init__(self, connection: socket.socket):
         self.connection = connection
         self.client_authenticated = False
-        
+
     def handle_handshake(self) -> bool:
         try:
             header = self.connection.recv(2)
@@ -29,7 +30,7 @@ class RequestHandler:
                 return False
 
             methods = self.connection.recv(nmethods)
-            
+
             # Authentication
             self.client_authenticated = self._authenticate(methods)
             return self.client_authenticated
@@ -49,9 +50,7 @@ class RequestHandler:
 
         if MethodCodes.USERNAME_PASSWORD.value in mutual_method:
             self.connection.sendall(
-                struct.pack(
-                    "!BB", SOCKS_VERSION, MethodCodes.USERNAME_PASSWORD.value
-                )
+                struct.pack("!BB", SOCKS_VERSION, MethodCodes.USERNAME_PASSWORD.value)
             )
             return self._handle_username_password_auth()
         elif MethodCodes.NO_AUTHENTICATION_REQUIRED.value in mutual_method:
@@ -69,7 +68,7 @@ class RequestHandler:
                 )
             )
             return False
-        
+
     def _handle_username_password_auth(self) -> bool:
         self.connection.settimeout(45.0)
         try:
@@ -85,7 +84,9 @@ class RequestHandler:
                 logger.error("No username length byte received")
                 return False
             username_len = ord(username_len_byte)
-            username = self.connection.recv(username_len).decode() if username_len else ""
+            username = (
+                self.connection.recv(username_len).decode() if username_len else ""
+            )
 
             # Receive password length and password
             password_len_byte = self.connection.recv(1)
@@ -93,7 +94,9 @@ class RequestHandler:
                 logger.error("No password length byte received")
                 return False
             password_len = ord(password_len_byte)
-            password = self.connection.recv(password_len).decode() if password_len else ""
+            password = (
+                self.connection.recv(password_len).decode() if password_len else ""
+            )
 
             # Validate credentials
             if username == USERNAME and password == PASSWORD:
@@ -110,7 +113,9 @@ class RequestHandler:
             logger.exception("Socket timed out waiting for data")
             return False
         except socket.error as e:
-            logger.exception(f"Socket error during username/password authentication: {e}")
+            logger.exception(
+                f"Socket error during username/password authentication: {e}"
+            )
             return False
 
     def parse_request(self) -> Request:
@@ -122,11 +127,11 @@ class RequestHandler:
             version, cmd, _, address_type = struct.unpack("!BBBB", header)
             if version != SOCKS_VERSION:
                 raise InvalidVersionError(version)
-            
+
             address: Address = self._parse_address(address_type)
-            
+
             return Request(version=version, command=cmd, address=address)
-        
+
         except socket.error as e:
             logger.exception(f"Socket error during request parsing: {e}")
             raise socket.error(e)
@@ -143,20 +148,25 @@ class RequestHandler:
                     address: str = socket.gethostbyname(domain_name)
                     address_type = AddressTypeCodes.IPv4.value
                 case AddressTypeCodes.IPv6.value:
-                    address: str = socket.inet_ntop(socket.AF_INET6, self.connection.recv(16))
+                    address: str = socket.inet_ntop(
+                        socket.AF_INET6, self.connection.recv(16)
+                    )
                     domain_name: str = self._gethostbyaddr(address)
                 case _:
                     raise InvalidRequestError(address_type)
 
             port: int = struct.unpack("!H", self.connection.recv(2))[0]
             return Address(
-                name=domain_name, ip=address, port=port, address_type=map_address_type_to_enum(address_type)
+                name=domain_name,
+                ip=address,
+                port=port,
+                address_type=map_address_type_to_enum(address_type),
             )
-            
+
         except socket.error as e:
             logger.exception(f"Socket error during address and port parsing: {e}")
             raise socket.error(e)
-        
+
     def _gethostbyaddr(self, ip: str) -> str:
         try:
             return socket.gethostbyaddr(ip)[0]
