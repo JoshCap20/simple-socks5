@@ -12,7 +12,6 @@ logger = get_logger(__name__)
 
 class RequestHandler:
     connection: socket.socket
-    client_authenticated: bool
 
     def __init__(self, connection: socket.socket):
         self.connection = connection
@@ -27,13 +26,12 @@ class RequestHandler:
             version, nmethods = struct.unpack("!BB", header)
 
             if version != SOCKS_VERSION:
-                return False
+                raise InvalidVersionError(version)
 
             methods = self.connection.recv(nmethods)
 
             # Authentication
-            self.client_authenticated = self._authenticate(methods)
-            return self.client_authenticated
+            return self._authenticate(methods)
         except socket.error as e:
             logger.exception(f"Socket error during handshake: {e}")
             return False

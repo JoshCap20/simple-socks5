@@ -2,6 +2,10 @@ from .argument_parser import parse_arguments
 
 
 def main():
+    """
+    Entry point of the program.
+    Parses command line arguments, starts the server, and handles server shutdown.
+    """
     args = parse_arguments()
 
     from .server import ThreadingTCPServer, SocksProxy
@@ -15,9 +19,9 @@ def main():
             server.serve_forever()
         except KeyboardInterrupt:
             logger.info("Server shutting down...")
+        finally:
             server.server_close()
             server.shutdown()
-        finally:
             logger.info("Server terminated.")
 
 
