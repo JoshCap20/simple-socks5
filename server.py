@@ -61,10 +61,10 @@ class SocksProxy(StreamRequestHandler):
                     reply = generate_command_not_supported_reply()
                     
         except ConnectionRefusedError:
-            logger.error("Connection refused")
+            logger.error(f"Connection refused: {request.address.name}, {request.address.ip}:{request.address.port}")
             reply = generate_connection_refused_reply()
         except socket.gaierror:
-            logger.error("Host unreachable")
+            logger.error(f"Host unreachable: {request.address.name}, {request.address.ip}:{request.address.port}")
             reply = generate_host_unreachable_reply()
         except Exception as e:
             logger.error(f"Exception: {e}")
@@ -80,11 +80,13 @@ class SocksProxy(StreamRequestHandler):
 
     def handle_connect(self, address: Address) -> None:
         logger.info(f"CONNECT HANDLING: {address.ip}:{address.port}")
-        remote: socket.socket = generate_socket(address.address_type)
+        remote: socket.socket = generate_socket(address)
         remote.connect((address.ip, address.port))
         bind_address: socket._RetAddress = remote.getsockname()
         logger.info(f"Connected to remote: {bind_address}")
 
+        print(f"BIND1: {bind_address[0]}:{bind_address[1]}")
+        print(f"ADDRESS1: {address.ip}:{address.port}")
         success_reply = generate_succeeded_reply(
             address.address_type, bind_address[0], bind_address[1]
         )

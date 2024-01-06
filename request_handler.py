@@ -138,6 +138,7 @@ class RequestHandler:
                 domain_length = self.connection.recv(1)[0]
                 domain_name = self.connection.recv(domain_length)
                 address: str = socket.gethostbyname(domain_name)
+                address_type = AddressTypeCodes.IPv4.value
             elif address_type == AddressTypeCodes.IPv6.value:
                 address: str = socket.inet_ntop(socket.AF_INET6, self.connection.recv(16))
                 domain_name: str = socket.gethostbyaddr(address)[0]

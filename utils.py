@@ -1,7 +1,7 @@
 import struct
 import socket
 from constants import SOCKS_VERSION, ReplyCodes, AddressTypeCodes
-
+from models import Address
 
 def generate_general_socks_server_failure_reply(
     address_type: AddressTypeCodes = AddressTypeCodes.IPv4,
@@ -66,19 +66,10 @@ def generate_failed_reply(
 
 
 def generate_succeeded_reply(
-    address_type: AddressTypeCodes, address: str, port: int
+    address_type: AddressTypeCodes, ip: str, port: int
 ) -> bytes:
-    # Handle IPv4 and IPv6 addresses
-    if address_type in [AddressTypeCodes.IPv4, AddressTypeCodes.IPv6]:
-        addr_bytes = translate_address_to_bytes(address_type, address)
-        address_field = int.from_bytes(addr_bytes, byteorder="big")
-    # Handle domain names
-    elif address_type == AddressTypeCodes.DOMAIN_NAME:
-        address_type = AddressTypeCodes.IPv4
-        addr_bytes = translate_address_to_bytes(address_type, address)
-        address_field = int.from_bytes(addr_bytes, byteorder="big")
-    else:
-        raise ValueError("Unknown address type")
+    addr_bytes: bytes = translate_address_to_bytes(address_type, ip)
+    address_field: int = int.from_bytes(addr_bytes, byteorder="big")
 
     return struct.pack(
         "!BBBBIH",
@@ -90,11 +81,11 @@ def generate_succeeded_reply(
         port,
     )
 
-def translate_address_to_bytes(address_type: AddressTypeCodes, address: str) -> bytes:
+def translate_address_to_bytes(address_type: AddressTypeCodes, ip: str) -> bytes:
     if address_type == AddressTypeCodes.IPv4:
-        return socket.inet_aton(address)
+        return socket.inet_aton(ip)
     elif address_type == AddressTypeCodes.IPv6:
-        return socket.inet_pton(socket.AF_INET6, address)
+        return socket.inet_pton(socket.AF_INET6, ip)
     else:
         raise ValueError("Address type not suitable for byte translation")
     
@@ -111,13 +102,10 @@ def map_address_type_to_enum(address_type: int) -> AddressTypeCodes:
 def map_address_type_to_socket_family(address_type: AddressTypeCodes) -> int:
     if address_type == AddressTypeCodes.IPv4:
         return socket.AF_INET
-    elif address_type == AddressTypeCodes.DOMAIN_NAME:
-        # Since request_handler converts domain names to IPv4 addresses
-        return socket.AF_INET
     elif address_type == AddressTypeCodes.IPv6:
         return socket.AF_INET6
     else:
         raise ValueError("Unknown address type")
     
-def generate_socket(address_type: AddressTypeCodes) -> socket.socket:
-    return socket.socket(map_address_type_to_socket_family(address_type), socket.SOCK_STREAM)
+def generate_socket(address: Address) -> socket.socket:
+    return socket.socket(map_address_type_to_socket_family(address.address_type), socket.SOCK_STREAM)
