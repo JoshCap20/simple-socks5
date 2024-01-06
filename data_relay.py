@@ -1,8 +1,10 @@
+import os
 import select
 import socket
 from logger import get_logger
 
-logger = get_logger(__name__)
+verbose = os.environ.get("VERBOSE", "0") == "1"
+logger = get_logger(__name__, verbose=verbose)
 
 class DataRelay:
     @staticmethod
