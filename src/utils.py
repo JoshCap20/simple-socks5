@@ -1,7 +1,8 @@
 import struct
 import socket
-from constants import SOCKS_VERSION, ReplyCodes, AddressTypeCodes
-from models import Address
+
+from .constants import SOCKS_VERSION, ReplyCodes, AddressTypeCodes
+from .models import Address
 
 def generate_general_socks_server_failure_reply(
     address_type: AddressTypeCodes = AddressTypeCodes.IPv4,

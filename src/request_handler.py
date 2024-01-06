@@ -1,11 +1,11 @@
 import struct
 import socket
 
-from constants import SOCKS_VERSION, AddressTypeCodes, MethodCodes, USERNAME, PASSWORD
-from exceptions import InvalidRequestError, InvalidVersionError
-from logger import get_logger
-from models import Address, Request
-from utils import map_address_type_to_enum
+from .constants import SOCKS_VERSION, AddressTypeCodes, MethodCodes, USERNAME, PASSWORD
+from .exceptions import InvalidRequestError, InvalidVersionError
+from .logger import get_logger
+from .models import Address, Request
+from .utils import map_address_type_to_enum
 
 logger = get_logger(__name__)
 

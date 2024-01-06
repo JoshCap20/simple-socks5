@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from constants import AddressTypeCodes
+
+from .constants import AddressTypeCodes
 
 @dataclass
 class Address:
