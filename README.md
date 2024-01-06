@@ -13,7 +13,7 @@ This is a simple SOCKS Protocol Version 5 server written in Python. It is based 
 
 ### Usage
 ```bash
-python3 main.py [--host HOST | -H HOST] [--port PORT | -P PORT] [--quiet | -Q]
+python3 app.py [--host HOST | -H HOST] [--port PORT | -P PORT] [--quiet | -Q]
 ```
 - `--host HOST` or `-H HOST`: The host address to bind to. Default is `localhost`. Use `0.0.0.0` to bind to all available interfaces.
 - `--port PORT` or `-P PORT`: The port number to bind to. Default is `9999`.
