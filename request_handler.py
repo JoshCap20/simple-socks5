@@ -53,7 +53,7 @@ class RequestHandler:
                     "!BB", SOCKS_VERSION, MethodCodes.USERNAME_PASSWORD.value
                 )
             )
-            return RequestHandler._handle_username_password_auth()
+            return self._handle_username_password_auth()
         elif MethodCodes.NO_AUTHENTICATION_REQUIRED.value in mutual_method:
             self.connection.sendall(
                 struct.pack(
@@ -138,8 +138,8 @@ class RequestHandler:
                     address: str = socket.inet_ntoa(self.connection.recv(4))
                     domain_name: str = self._gethostbyaddr(address)
                 case AddressTypeCodes.DOMAIN_NAME.value:
-                    domain_length = self.connection.recv(1)[0]
-                    domain_name = self.connection.recv(domain_length)
+                    domain_length: int = int(self.connection.recv(1)[0])
+                    domain_name: str = str(self.connection.recv(domain_length))
                     address: str = socket.gethostbyname(domain_name)
                     address_type = AddressTypeCodes.IPv4.value
                 case AddressTypeCodes.IPv6.value:
@@ -157,7 +157,7 @@ class RequestHandler:
             logger.exception(f"Socket error during address and port parsing: {e}")
             raise socket.error(e)
         
-    def _gethostbyaddr(self, ip: str) -> None:
+    def _gethostbyaddr(self, ip: str) -> str:
         try:
             return socket.gethostbyaddr(ip)[0]
         except OSError:
