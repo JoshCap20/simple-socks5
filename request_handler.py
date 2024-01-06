@@ -3,9 +3,11 @@ import socket
 
 from constants import SOCKS_VERSION, AddressTypeCodes, MethodCodes, USERNAME, PASSWORD
 from exceptions import InvalidRequestError, InvalidVersionError
-from logger import logger
+from logger import get_logger
 from models import Address, Request
 from utils import map_address_type_to_enum
+
+logger = get_logger(__name__)
 
 class RequestHandler:
     connection: socket.socket
@@ -32,7 +34,7 @@ class RequestHandler:
             self.client_authenticated = self._authenticate(methods)
             return self.client_authenticated
         except socket.error as e:
-            logger.error(f"Socket error during handshake: {e}")
+            logger.exception(f"Socket error during handshake: {e}")
             return False
 
     def _authenticate(self, methods: bytes) -> bool:
@@ -101,14 +103,14 @@ class RequestHandler:
                 return True
             else:
                 # Failure
-                logger.error(f"Invalid authentication request: {username}")
+                logger.warn(f"Invalid authentication request: {username}")
                 self.connection.sendall(b"\x01\x01")  # version 1, status 1 (failure)
                 return False
         except socket.timeout:
-            logger.error("Socket timed out waiting for data")
+            logger.exception("Socket timed out waiting for data")
             return False
         except socket.error as e:
-            logger.error(f"Socket error during username/password authentication: {e}")
+            logger.exception(f"Socket error during username/password authentication: {e}")
             return False
 
     def parse_request(self) -> Request:
@@ -124,9 +126,9 @@ class RequestHandler:
             address: Address = self._parse_address(address_type)
             
             return Request(version=version, command=cmd, address=address)
-            
+        
         except socket.error as e:
-            logger.error(f"Socket error during request parsing: {e}")
+            logger.exception(f"Socket error during request parsing: {e}")
             raise socket.error(e)
 
     def _parse_address(self, address_type: int) -> Address:
@@ -152,7 +154,7 @@ class RequestHandler:
             )
             
         except socket.error as e:
-            logger.error(f"Socket error during address and port parsing: {e}")
+            logger.exception(f"Socket error during address and port parsing: {e}")
             raise socket.error(e)
         
     def _gethostbyaddr(self, ip: str) -> None:
@@ -161,5 +163,5 @@ class RequestHandler:
         except OSError:
             return ip
         except Exception as e:
-            logger.error(f"Exception setting hostname: {e}")
+            logger.exception("Error setting hostname")
             return ip

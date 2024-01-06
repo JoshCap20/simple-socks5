@@ -1,8 +1,9 @@
 import argparse
 
-from logger import logger
+from logger import get_logger
 from server import ThreadingTCPServer, SocksProxy
 
+logger = get_logger(__name__)
 
 def main(host: str, port: int):
 
@@ -11,11 +12,12 @@ def main(host: str, port: int):
         try:
             server.serve_forever()
         except KeyboardInterrupt:
-            pass
-        finally:
-            logger.info("Server shutting down.")
+            logger.info("Server shutting down...")
             server.server_close()
             server.shutdown()
+        finally:
+            logger.info("Server terminated.")
+            
 
 
 if __name__ == "__main__":
