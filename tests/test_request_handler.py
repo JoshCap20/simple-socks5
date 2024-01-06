@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 import socket
 from src.request_handler import RequestHandler
+from src.exceptions import InvalidVersionError, InvalidRequestError
 
 # Testing Data
 ## Initial Requests
@@ -31,8 +32,8 @@ class TestRequestHandlerIPv4(unittest.TestCase):
     @patch("socket.socket.recv")
     def test_handle_handshake__incorrect_version(self, mock_recv):
         mock_recv.side_effect = [REQ_INCORRECT_VERSION]
-        result = self.handler.handle_handshake()
-        self.assertFalse(result)
+        with self.assertRaises(InvalidVersionError):
+            self.handler.handle_handshake()
 
     @patch("socket.socket.recv")
     @patch("socket.socket.sendall")
