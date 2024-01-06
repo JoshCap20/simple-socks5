@@ -1,7 +1,7 @@
 import struct
 import socket
 
-from .constants import SOCKS_VERSION, ReplyCodes, AddressTypeCodes
+from .constants import SOCKS_VERSION, MethodCodes, ReplyCodes, AddressTypeCodes
 from .models import Address
 
 
@@ -62,6 +62,8 @@ def generate_unassigned_reply() -> bytes:
 def generate_failed_reply(
     address_type: AddressTypeCodes, error_number: ReplyCodes
 ) -> bytes:
+    if address_type == AddressTypeCodes.DOMAIN_NAME:
+        raise ValueError("Address type not suitable for failed reply")
     return struct.pack(
         "!BBBBIH", SOCKS_VERSION, error_number.value, 0, address_type.value, 0, 0
     )
@@ -82,6 +84,10 @@ def generate_succeeded_reply(
         address_field,
         port,
     )
+
+
+def generate_connection_method_response(method: MethodCodes) -> bytes:
+    return struct.pack("!BB", SOCKS_VERSION, method.value)
 
 
 def translate_address_to_bytes(address_type: AddressTypeCodes, ip: str) -> bytes:
