@@ -1,14 +1,14 @@
-import argparse
+from argument_parser import parse_arguments
 
-from logger import get_logger
-from server import ThreadingTCPServer, SocksProxy
+def main():
+    args = parse_arguments()
+    
+    from server import ThreadingTCPServer, SocksProxy
+    from logger import get_logger
+    logger = get_logger(__name__)
 
-logger = get_logger(__name__)
-
-def main(host: str, port: int):
-
-    with ThreadingTCPServer((host, port), SocksProxy) as server:
-        logger.info(f"Server started on {host}:{port}")
+    with ThreadingTCPServer((args.host, args.port), SocksProxy) as server:
+        logger.info(f"Server started on {args.host}:{args.port}")
         try:
             server.serve_forever()
         except KeyboardInterrupt:
@@ -17,22 +17,6 @@ def main(host: str, port: int):
             server.shutdown()
         finally:
             logger.info("Server terminated.")
-            
-
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="SOCKS5 Proxy Server")
-    parser.add_argument(
-        "-H",
-        "--host",
-        type=str,
-        default="localhost",
-        help="Host address for the SOCKS server",
-    )
-    parser.add_argument(
-        "-P", "--port", type=int, default=9999, help="Port number for the SOCKS server"
-    )
-    
-    args = parser.parse_args()
-
-    main(args.host, args.port)
+    main()
