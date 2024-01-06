@@ -131,24 +131,26 @@ class RequestHandler:
 
     def _parse_address(self, address_type: int) -> Address:
         try:
-            if address_type == AddressTypeCodes.IPv4.value:
-                address: str = socket.inet_ntoa(self.connection.recv(4))
-                domain_name: str = socket.gethostbyaddr(address)[0]
-            elif address_type == AddressTypeCodes.DOMAIN_NAME.value:
-                domain_length = self.connection.recv(1)[0]
-                domain_name = self.connection.recv(domain_length)
-                address: str = socket.gethostbyname(domain_name)
-                address_type = AddressTypeCodes.IPv4.value
-            elif address_type == AddressTypeCodes.IPv6.value:
-                address: str = socket.inet_ntop(socket.AF_INET6, self.connection.recv(16))
-                domain_name: str = socket.gethostbyaddr(address)[0]
-            else:
-                raise InvalidRequestError(address_type)
+            match address_type:
+                case AddressTypeCodes.IPv4.value:
+                    address: str = socket.inet_ntoa(self.connection.recv(4))
+                    domain_name: str = socket.gethostbyaddr(address)[0]
+                case AddressTypeCodes.DOMAIN_NAME.value:
+                    domain_length = self.connection.recv(1)[0]
+                    domain_name = self.connection.recv(domain_length)
+                    address: str = socket.gethostbyname(domain_name)
+                    address_type = AddressTypeCodes.IPv4.value
+                case AddressTypeCodes.IPv6.value:
+                    address: str = socket.inet_ntop(socket.AF_INET6, self.connection.recv(16))
+                    domain_name: str = socket.gethostbyaddr(address)[0]
+                case _:
+                    raise InvalidRequestError(address_type)
 
             port: int = struct.unpack("!H", self.connection.recv(2))[0]
             return Address(
                 name=domain_name, ip=address, port=port, address_type=map_address_type_to_enum(address_type)
             )
+            
         except socket.error as e:
             logger.error(f"Socket error during address and port parsing: {e}")
             raise socket.error(e)
