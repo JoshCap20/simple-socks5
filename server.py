@@ -2,7 +2,7 @@ import struct
 import socket
 from socketserver import ThreadingMixIn, TCPServer, StreamRequestHandler
 
-from constants import SOCKS_VERSION, AddressTypeCodes
+from constants import SOCKS_VERSION, AddressTypeCodes, CommandCodes
 from request_handler import RequestHandler
 from data_relay import DataRelay
 from utils import (
@@ -39,7 +39,7 @@ class SocksProxy(StreamRequestHandler):
         reply: bytes | None = None
 
         try:
-            if cmd == 1:
+            if cmd == CommandCodes.CONNECT.value:
                 # CONNECT
                 remote: socket.socket = socket.socket(
                     socket.AF_INET, socket.SOCK_STREAM
@@ -53,11 +53,13 @@ class SocksProxy(StreamRequestHandler):
                 self.connection.sendall(success_reply)
 
                 DataRelay.relay_data(self.connection, remote)
-            elif cmd == 2:
+            elif cmd == CommandCodes.BIND.value:
                 # TODO: Implement BIND
+                logger.error("BIND command not supported")
                 reply = generate_command_not_supported_reply()
-            elif cmd == 3:
+            elif cmd == CommandCodes.UDP_ASSOCIATE.value:
                 # TODO: Implement UDP ASSOCIATE
+                logger.error("UDP ASSOCIATE command not supported")
                 reply = generate_command_not_supported_reply()
             else:
                 # Invalid command
@@ -72,6 +74,7 @@ class SocksProxy(StreamRequestHandler):
         except Exception as e:
             logger.error(f"Exception: {e}")
             reply = generate_general_socks_server_failure_reply()
+            
         finally:
             if reply is not None:
                 try:
