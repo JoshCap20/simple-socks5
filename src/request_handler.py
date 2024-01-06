@@ -5,7 +5,7 @@ from .constants import SOCKS_VERSION, AddressTypeCodes, MethodCodes, USERNAME, P
 from .exceptions import InvalidRequestError, InvalidVersionError
 from .logger import get_logger
 from .models import Address, Request
-from .utils import map_address_type_to_enum
+from .utils import map_address_type_to_enum, generate_connection_method_response
 
 logger = get_logger(__name__)
 
@@ -48,22 +48,20 @@ class RequestHandler:
 
         if MethodCodes.USERNAME_PASSWORD.value in mutual_method:
             self.connection.sendall(
-                struct.pack("!BB", SOCKS_VERSION, MethodCodes.USERNAME_PASSWORD.value)
+                generate_connection_method_response(MethodCodes.USERNAME_PASSWORD)
             )
             return self._handle_username_password_auth()
         elif MethodCodes.NO_AUTHENTICATION_REQUIRED.value in mutual_method:
             self.connection.sendall(
-                struct.pack(
-                    "!BB", SOCKS_VERSION, MethodCodes.NO_AUTHENTICATION_REQUIRED.value
+                generate_connection_method_response(
+                    MethodCodes.NO_AUTHENTICATION_REQUIRED
                 )
             )
             return True
         else:
             # No acceptable methods
             self.connection.sendall(
-                struct.pack(
-                    "!BB", SOCKS_VERSION, MethodCodes.NO_ACCEPTABLE_METHODS.value
-                )
+                generate_connection_method_response(MethodCodes.NO_ACCEPTABLE_METHODS)
             )
             return False
 
