@@ -1,8 +1,7 @@
-import struct
 import socket
 from socketserver import ThreadingMixIn, TCPServer, StreamRequestHandler
 
-from constants import SOCKS_VERSION, AddressTypeCodes, CommandCodes
+from constants import CommandCodes
 from request_handler import RequestHandler
 from data_relay import DataRelay
 from utils import (
@@ -11,11 +10,10 @@ from utils import (
     generate_connection_refused_reply,
     generate_host_unreachable_reply,
     generate_succeeded_reply,
-    generate_socket,
-    map_address_type_to_enum
+    generate_socket
 )
 from logger import logger
-
+from models import Request, Address
 
 class ThreadingTCPServer(ThreadingMixIn, TCPServer):
     """A threading version of TCP server."""
@@ -37,32 +35,26 @@ class SocksProxy(StreamRequestHandler):
             logger.error("Client not authenticated")
             return
 
-        version, cmd, address_type = request_handler.parse_request()
-        if version != SOCKS_VERSION:
-            return
-
-        address, port = request_handler.parse_address_and_port(
-            address_type
-        )
-
+        request: Request = request_handler.parse_request()
+        
         reply: bytes | None = None
         
-        logger.info(f"Connection Established: {address}:{port}")
+        logger.info(f"Connection Established with {request.address.name}, {request.address.ip}, {request.address.port}, {request.address.address_type}")
         
         try:
-            match cmd:
+            match request.command:
                 case CommandCodes.CONNECT.value:
                     # CONNECT
-                    logger.info(f"CONNECT {address}:{port}")
-                    reply = self.handle_connect(address, port, map_address_type_to_enum(address_type))
+                    logger.info(f"CONNECT {request.address.name}:{request.address.port}")
+                    reply = self.handle_connect(request.address)
                     
                 case CommandCodes.BIND.value:
                     # TODO: BIND
-                    reply = self.handle_bind(address, port)
+                    reply = self.handle_bind(request.address)
                     
                 case CommandCodes.UDP_ASSOCIATE.value:
                     # TODO: UDP ASSOCIATE
-                    reply = self.handle_udp_associate(address, port)
+                    reply = self.handle_udp_associate(request.address)
                     
                 case _:
                     # Invalid command
@@ -86,24 +78,24 @@ class SocksProxy(StreamRequestHandler):
                     logger.error(f"Error sending reply: {e}")
             self.server.shutdown_request(self.request)
 
-    def handle_connect(self, address: str, port: int, address_type: AddressTypeCodes) -> None:
-        logger.info(f"CONNECT HANDLING: {address}:{port}")
-        remote: socket.socket = generate_socket(address_type)
-        remote.connect((address, port))
+    def handle_connect(self, address: Address) -> None:
+        logger.info(f"CONNECT HANDLING: {address.ip}:{address.port}")
+        remote: socket.socket = generate_socket(address.address_type)
+        remote.connect((address.ip, address.port))
         bind_address: socket._RetAddress = remote.getsockname()
         logger.info(f"Connected to remote: {bind_address}")
 
         success_reply = generate_succeeded_reply(
-            address_type, bind_address[0], bind_address[1]
+            address.address_type, bind_address[0], bind_address[1]
         )
         self.connection.sendall(success_reply)
         logger.info(f"Sent success reply: {success_reply}")
         DataRelay.relay_data(self.connection, remote)
         
-    def handle_bind(self, address: str, port: int) -> bytes:
+    def handle_bind(self, address: Address) -> bytes:
         logger.error("BIND command not supported")
         return generate_command_not_supported_reply()
     
-    def handle_udp_associate(self, address: str, port: int) -> bytes:
+    def handle_udp_associate(self, address: Address) -> bytes:
         logger.error("UDP ASSOCIATE command not supported")
         return generate_command_not_supported_reply()

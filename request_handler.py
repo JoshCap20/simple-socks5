@@ -2,8 +2,10 @@ import struct
 import socket
 
 from constants import SOCKS_VERSION, AddressTypeCodes, MethodCodes, USERNAME, PASSWORD
+from exceptions import InvalidRequestError, InvalidVersionError
 from logger import logger
-
+from models import Address, Request
+from utils import map_address_type_to_enum
 
 class RequestHandler:
     connection: socket.socket
@@ -109,33 +111,43 @@ class RequestHandler:
             logger.error(f"Socket error during username/password authentication: {e}")
             return False
 
-    def parse_request(self) -> tuple:
+    def parse_request(self) -> Request:
         try:
             header = self.connection.recv(4)
             if len(header) < 4:
-                return None, None, None
+                raise InvalidRequestError(header)
 
             version, cmd, _, address_type = struct.unpack("!BBBB", header)
-            return version, cmd, address_type
+            if version != SOCKS_VERSION:
+                raise InvalidVersionError(version)
+            
+            address: Address = self._parse_address(address_type)
+            
+            return Request(version=version, command=cmd, address=address)
+            
         except socket.error as e:
             logger.error(f"Socket error during request parsing: {e}")
-            return None, None, None
+            raise socket.error(e)
 
-    def parse_address_and_port(self, address_type: int) -> tuple:
+    def _parse_address(self, address_type: int) -> Address:
         try:
             if address_type == AddressTypeCodes.IPv4.value:
                 address: str = socket.inet_ntoa(self.connection.recv(4))
+                domain_name: str = socket.gethostbyaddr(address)[0]
             elif address_type == AddressTypeCodes.DOMAIN_NAME.value:
                 domain_length = self.connection.recv(1)[0]
-                address = self.connection.recv(domain_length)
-                address: str = socket.gethostbyname(address)
+                domain_name = self.connection.recv(domain_length)
+                address: str = socket.gethostbyname(domain_name)
             elif address_type == AddressTypeCodes.IPv6.value:
                 address: str = socket.inet_ntop(socket.AF_INET6, self.connection.recv(16))
+                domain_name: str = socket.gethostbyaddr(address)[0]
             else:
-                return None, None
+                raise InvalidRequestError(address_type)
 
             port: int = struct.unpack("!H", self.connection.recv(2))[0]
-            return address, port
+            return Address(
+                name=domain_name, ip=address, port=port, address_type=map_address_type_to_enum(address_type)
+            )
         except socket.error as e:
             logger.error(f"Socket error during address and port parsing: {e}")
-            return None, None
+            raise socket.error(e)
