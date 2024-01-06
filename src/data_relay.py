@@ -9,8 +9,22 @@ logger = get_logger(__name__, verbose=verbose)
 
 
 class DataRelay:
+    """
+    Class responsible for relaying data between a client socket and a remote socket.
+    """
+
     @staticmethod
     def relay_data(client_socket: socket.socket, remote_socket: socket.socket) -> None:
+        """
+        Relays data between the client socket and the remote socket.
+
+        Args:
+            client_socket (socket.socket): The client socket.
+            remote_socket (socket.socket): The remote socket.
+
+        Returns:
+            None
+        """
         client_address: socket._RetAddress = client_socket.getpeername()
         remote_address: socket._RetAddress = remote_socket.getpeername()
 
