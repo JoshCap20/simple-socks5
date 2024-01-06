@@ -39,13 +39,12 @@ class SocksProxy(StreamRequestHandler):
         
         reply: bytes | None = None
         
-        logger.info(f"Connection Established with {request.address.name}, {request.address.ip}, {request.address.port}, {request.address.address_type}")
+        logger.info(f"Connection Established: {request.address.name}, {request.address.ip}, {request.address.port}, {request.address.address_type}")
         
         try:
             match request.command:
                 case CommandCodes.CONNECT.value:
                     # CONNECT
-                    logger.info(f"CONNECT {request.address.name}:{request.address.port}")
                     reply = self.handle_connect(request.address)
                     
                 case CommandCodes.BIND.value:
@@ -79,19 +78,15 @@ class SocksProxy(StreamRequestHandler):
             self.server.shutdown_request(self.request)
 
     def handle_connect(self, address: Address) -> None:
-        logger.info(f"CONNECT HANDLING: {address.ip}:{address.port}")
         remote: socket.socket = generate_socket(address)
         remote.connect((address.ip, address.port))
         bind_address: socket._RetAddress = remote.getsockname()
-        logger.info(f"Connected to remote: {bind_address}")
 
-        print(f"BIND1: {bind_address[0]}:{bind_address[1]}")
-        print(f"ADDRESS1: {address.ip}:{address.port}")
         success_reply = generate_succeeded_reply(
             address.address_type, bind_address[0], bind_address[1]
         )
         self.connection.sendall(success_reply)
-        logger.info(f"Sent success reply: {success_reply}")
+        
         DataRelay.relay_data(self.connection, remote)
         
     def handle_bind(self, address: Address) -> bytes:
