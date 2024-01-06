@@ -15,18 +15,20 @@ def main(host: str, port: int):
         finally:
             logger.info("Server shutting down.")
             server.server_close()
+            server.shutdown()
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="SOCKS5 Proxy Server")
     parser.add_argument(
+        "-H",
         "--host",
         type=str,
         default="localhost",
         help="Host address for the SOCKS server",
     )
     parser.add_argument(
-        "--port", type=int, default=9999, help="Port number for the SOCKS server"
+        "-P", "--port", type=int, default=9999, help="Port number for the SOCKS server"
     )
     
     args = parser.parse_args()
