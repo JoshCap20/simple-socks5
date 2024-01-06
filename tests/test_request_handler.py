@@ -1,8 +1,11 @@
 import unittest
 from unittest.mock import MagicMock, patch
+import struct
 import socket
 from src.request_handler import RequestHandler
 from src.exceptions import InvalidVersionError, InvalidRequestError
+from src.constants import SOCKS_VERSION, AddressTypeCodes
+from src.models import Address, Request
 
 # Testing Data
 ## Initial Requests
@@ -98,24 +101,65 @@ class TestRequestHandlerIPv4(unittest.TestCase):
         result = self.handler.handle_handshake()
         mock_sendall.assert_called_with(RESP_LOGIN_FAILURE)
 
-    def test_authenticate_with_no_authentication_required(self):
-        # TODO: Implement test case for authenticate method with no authentication required
-        pass
+    @patch("socket.socket.sendall")
+    def test_authenticate_with_no_authentication_required(self, mock_sendall):
+        methods = b"\x00"
+        result = self.handler._authenticate(methods)
+        mock_sendall.assert_called_with(RESP_CORRECT_VERSION_NO_AUTH_REQUIRED)
+        self.assertTrue(result)
 
-    def test_authenticate_with_username_password(self):
-        # TODO: Implement test case for authenticate method with username/password authentication
-        pass
+    @patch("socket.socket.recv")
+    @patch("socket.socket.sendall")
+    def test_authenticate_with_username_password(self, mock_sendall, mock_recv):
+        methods = b"\x02"
+        mock_recv.side_effect = [
+            b"\x01",
+            b"\x08",
+            b"myusername",
+            b"\x08",
+            b"mypassword",
+        ]
+        result = self.handler._authenticate(methods)
+        mock_sendall.assert_called_with(RESP_LOGIN_SUCCESS)
+        self.assertTrue(result)
 
-    def test_authenticate_with_invalid_methods(self):
-        # TODO: Implement test case for authenticate method with invalid methods
-        pass
+    @patch("socket.socket.sendall")
+    def test_authenticate_with_invalid_methods(self, mock_sendall):
+        methods = b"\xFF"
+        result = self.handler._authenticate(methods)
+        mock_sendall.assert_called_with(RESP_CORRECT_VERSION_NO_ACCEPTABLE_METHODS)
+        self.assertFalse(result)
 
-    def test_handle_username_password_auth(self):
-        # TODO: Implement test case for handle_username_password_auth method
-        pass
+    @patch("socket.socket.recv")
+    @patch("socket.socket.sendall")
+    def test_handle_username_password_auth(self, mock_sendall, mock_recv):
+        mock_recv.side_effect = [
+            b"\x01",
+            b"\x08",
+            b"myusername",
+            b"\x08",
+            b"mypassword",
+        ]
+        result = self.handler._handle_username_password_auth()
+        mock_sendall.assert_called_with(RESP_LOGIN_SUCCESS)
+        self.assertTrue(result)
+
+    @patch("socket.socket.recv")
+    @patch("socket.socket.sendall")
+    def test_handle_username_password_auth__invalid(self, mock_sendall, mock_recv):
+        mock_recv.side_effect = [
+            b"\x01",
+            b"\x08",
+            b"myusername",
+            b"\x08",
+            b"eh",
+        ]
+        result = self.handler._handle_username_password_auth()
+        mock_sendall.assert_called_with(RESP_LOGIN_FAILURE)
+        self.assertFalse(result)
 
     def test_parse_request(self):
-        # TODO: Implement test case for parse_request method
+        # TODO: Implement test case for _parse_request method
         pass
 
     def test_parse_address_ipv4(self):
