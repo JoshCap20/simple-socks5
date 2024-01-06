@@ -1,8 +1,7 @@
-import struct
 import socket
 from socketserver import ThreadingMixIn, TCPServer, StreamRequestHandler
 
-from constants import SOCKS_VERSION, AddressTypeCodes, CommandCodes
+from constants import CommandCodes
 from request_handler import RequestHandler
 from data_relay import DataRelay
 from utils import (
@@ -11,9 +10,10 @@ from utils import (
     generate_connection_refused_reply,
     generate_host_unreachable_reply,
     generate_succeeded_reply,
+    generate_socket
 )
 from logger import logger
-
+from models import Request, Address
 
 class ThreadingTCPServer(ThreadingMixIn, TCPServer):
     """A threading version of TCP server."""
@@ -25,51 +25,45 @@ class SocksProxy(StreamRequestHandler):
     connection: socket.socket
 
     def handle(self):
-        if not RequestHandler.handle_handshake(self.connection):
+        request_handler = RequestHandler(self.connection)
+        
+        if not request_handler.handle_handshake():
+            logger.error("Handshake failed")
+            return
+        
+        if not request_handler.client_authenticated:
+            logger.error("Client not authenticated")
             return
 
-        version, cmd, address_type = RequestHandler.parse_request(self.connection)
-        if version != SOCKS_VERSION:
-            return
-
-        address, port = RequestHandler.parse_address_and_port(
-            self.connection, address_type
-        )
-
+        request: Request = request_handler.parse_request()
+        
         reply: bytes | None = None
-
+        
+        logger.info(f"Connection Established: {request.address.name}, {request.address.ip}, {request.address.port}, {request.address.address_type}")
+        
         try:
-            if cmd == CommandCodes.CONNECT.value:
-                # CONNECT
-                remote: socket.socket = socket.socket(
-                    socket.AF_INET, socket.SOCK_STREAM
-                )
-                remote.connect((address, port))
-                bind_address: socket._RetAddress = remote.getsockname()
-
-                success_reply = generate_succeeded_reply(
-                    AddressTypeCodes.IPv4, bind_address[0], bind_address[1]
-                )
-                self.connection.sendall(success_reply)
-
-                DataRelay.relay_data(self.connection, remote)
-            elif cmd == CommandCodes.BIND.value:
-                # TODO: Implement BIND
-                logger.error("BIND command not supported")
-                reply = generate_command_not_supported_reply()
-            elif cmd == CommandCodes.UDP_ASSOCIATE.value:
-                # TODO: Implement UDP ASSOCIATE
-                logger.error("UDP ASSOCIATE command not supported")
-                reply = generate_command_not_supported_reply()
-            else:
-                # Invalid command
-                reply = generate_command_not_supported_reply()
-
+            match request.command:
+                case CommandCodes.CONNECT.value:
+                    # CONNECT
+                    reply = self.handle_connect(request.address)
+                    
+                case CommandCodes.BIND.value:
+                    # TODO: BIND
+                    reply = self.handle_bind(request.address)
+                    
+                case CommandCodes.UDP_ASSOCIATE.value:
+                    # TODO: UDP ASSOCIATE
+                    reply = self.handle_udp_associate(request.address)
+                    
+                case _:
+                    # Invalid command
+                    reply = generate_command_not_supported_reply()
+                    
         except ConnectionRefusedError:
-            logger.error("Connection refused")
+            logger.error(f"Connection refused: {request.address.name}, {request.address.ip}:{request.address.port}")
             reply = generate_connection_refused_reply()
         except socket.gaierror:
-            logger.error("Host unreachable")
+            logger.error(f"Host unreachable: {request.address.name}, {request.address.ip}:{request.address.port}")
             reply = generate_host_unreachable_reply()
         except Exception as e:
             logger.error(f"Exception: {e}")
@@ -82,3 +76,23 @@ class SocksProxy(StreamRequestHandler):
                 except BrokenPipeError as e:
                     logger.error(f"Error sending reply: {e}")
             self.server.shutdown_request(self.request)
+
+    def handle_connect(self, address: Address) -> None:
+        remote: socket.socket = generate_socket(address)
+        remote.connect((address.ip, address.port))
+        bind_address: socket._RetAddress = remote.getsockname()
+
+        success_reply = generate_succeeded_reply(
+            address.address_type, bind_address[0], bind_address[1]
+        )
+        self.connection.sendall(success_reply)
+        
+        DataRelay.relay_data(self.connection, remote)
+        
+    def handle_bind(self, address: Address) -> bytes:
+        logger.error("BIND command not supported")
+        return generate_command_not_supported_reply()
+    
+    def handle_udp_associate(self, address: Address) -> bytes:
+        logger.error("UDP ASSOCIATE command not supported")
+        return generate_command_not_supported_reply()
