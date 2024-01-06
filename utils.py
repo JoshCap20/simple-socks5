@@ -68,20 +68,10 @@ def generate_failed_reply(
 def generate_succeeded_reply(
     address_type: AddressTypeCodes, address: str, port: int
 ) -> bytes:
-    if address_type == AddressTypeCodes.IPv4:
-        addr_bytes = socket.inet_aton(address)
-        reply_format = "!BBBBIH"
-    elif address_type == AddressTypeCodes.DOMAIN_NAME:
-        addr_bytes = struct.pack("!B", len(address)) + address.encode()
-        reply_format = "!BBBBIH"
-    elif address_type == AddressTypeCodes.IPv6:
-        addr_bytes = socket.inet_pton(socket.AF_INET6, address)
-        reply_format = "!BBBBIH"
-    else:
-        raise ValueError("Unknown address type")
+    addr_bytes: bytes = translate_address_to_bytes(address_type, address)
 
     return struct.pack(
-        reply_format,
+        "!BBBBIH",
         SOCKS_VERSION,
         ReplyCodes.SUCCEEDED.value,
         0,
@@ -89,3 +79,13 @@ def generate_succeeded_reply(
         int.from_bytes(addr_bytes, byteorder="big"),
         port,
     )
+
+def translate_address_to_bytes(address_type: AddressTypeCodes, address: str) -> bytes:
+    if address_type == AddressTypeCodes.IPv4:
+        return socket.inet_aton(address)
+    elif address_type == AddressTypeCodes.DOMAIN_NAME:
+        return struct.pack("!B", len(address)) + address.encode()
+    elif address_type == AddressTypeCodes.IPv6:
+        return socket.inet_pton(socket.AF_INET6, address)
+    else:
+        raise ValueError("Unknown address type")

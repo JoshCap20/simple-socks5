@@ -46,6 +46,6 @@ class DataRelay:
                 try:
                     sock.shutdown(socket.SHUT_RDWR)
                 except Exception as e:
-                    logger.error(f"Error shutting down socket: {e}")
+                    pass
                 finally:
                     sock.close()
