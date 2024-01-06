@@ -31,6 +31,7 @@ class AddressTypeCodes(Enum):
     DOMAIN_NAME = 0x03
     IPv6 = 0x04
 
+
 class CommandCodes(Enum):
     CONNECT = 0x01
     BIND = 0x02

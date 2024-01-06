@@ -4,6 +4,7 @@ import socket
 from .constants import SOCKS_VERSION, ReplyCodes, AddressTypeCodes
 from .models import Address
 
+
 def generate_general_socks_server_failure_reply(
     address_type: AddressTypeCodes = AddressTypeCodes.IPv4,
 ) -> bytes:
@@ -82,6 +83,7 @@ def generate_succeeded_reply(
         port,
     )
 
+
 def translate_address_to_bytes(address_type: AddressTypeCodes, ip: str) -> bytes:
     if address_type == AddressTypeCodes.IPv4:
         return socket.inet_aton(ip)
@@ -89,7 +91,8 @@ def translate_address_to_bytes(address_type: AddressTypeCodes, ip: str) -> bytes
         return socket.inet_pton(socket.AF_INET6, ip)
     else:
         raise ValueError("Address type not suitable for byte translation")
-    
+
+
 def map_address_type_to_enum(address_type: int) -> AddressTypeCodes:
     if address_type == AddressTypeCodes.IPv4.value:
         return AddressTypeCodes.IPv4
@@ -99,7 +102,8 @@ def map_address_type_to_enum(address_type: int) -> AddressTypeCodes:
         return AddressTypeCodes.IPv6
     else:
         raise ValueError("Unknown address type")
-    
+
+
 def map_address_type_to_socket_family(address_type: AddressTypeCodes) -> int:
     if address_type == AddressTypeCodes.IPv4:
         return socket.AF_INET
@@ -107,6 +111,9 @@ def map_address_type_to_socket_family(address_type: AddressTypeCodes) -> int:
         return socket.AF_INET6
     else:
         raise ValueError("Unknown address type")
-    
+
+
 def generate_socket(address: Address) -> socket.socket:
-    return socket.socket(map_address_type_to_socket_family(address.address_type), socket.SOCK_STREAM)
+    return socket.socket(
+        map_address_type_to_socket_family(address.address_type), socket.SOCK_STREAM
+    )

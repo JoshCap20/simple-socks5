@@ -1,19 +1,21 @@
 import logging
 
+
 class LogColors:
-    RED = '\033[91m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    WHITE = '\033[97m'
-    GREY = '\033[90m'
-    RESET = '\033[0m'
+    RED = "\033[91m"
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    WHITE = "\033[97m"
+    GREY = "\033[90m"
+    RESET = "\033[0m"
+
 
 class ColorFormatter(logging.Formatter):
     COLORS = {
         logging.ERROR: LogColors.RED,
         logging.WARNING: LogColors.YELLOW,
         logging.INFO: LogColors.WHITE,
-        logging.DEBUG: LogColors.GREY
+        logging.DEBUG: LogColors.GREY,
     }
 
     def format(self, record):
@@ -22,6 +24,7 @@ class ColorFormatter(logging.Formatter):
         if color:
             message = color + message + LogColors.RESET
         return message
+
 
 def get_logger(name: str, verbose=True) -> logging.Logger:
     logger = logging.getLogger(name)

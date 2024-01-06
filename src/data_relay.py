@@ -7,6 +7,7 @@ from .logger import get_logger
 verbose = os.environ.get("VERBOSE", "0") == "1"
 logger = get_logger(__name__, verbose=verbose)
 
+
 class DataRelay:
     @staticmethod
     def relay_data(client_socket: socket.socket, remote_socket: socket.socket) -> None:
@@ -27,7 +28,7 @@ class DataRelay:
                     other_address: socket._RetAddress = (
                         remote_address if sock is client_socket else client_address
                     )
-                    
+
                     data: bytes = sock.recv(4096)
                     if not data:
                         logger.info(

@@ -10,12 +10,13 @@ from .utils import (
     generate_connection_refused_reply,
     generate_host_unreachable_reply,
     generate_succeeded_reply,
-    generate_socket
+    generate_socket,
 )
 from .logger import get_logger
 from .models import Request, Address
 
 logger = get_logger(__name__)
+
 
 class ThreadingTCPServer(ThreadingMixIn, TCPServer):
     """A threading version of TCP server."""
@@ -28,49 +29,55 @@ class SocksProxy(StreamRequestHandler):
 
     def handle(self):
         request_handler = RequestHandler(self.connection)
-        
+
         if not request_handler.handle_handshake():
             logger.error("Handshake failed")
             return
-        
+
         if not request_handler.client_authenticated:
             logger.error("Client not authenticated")
             return
 
         request: Request = request_handler.parse_request()
-        
+
         reply: bytes | None = None
-        
-        logger.info(f"Connection Established: {request.address.name}, {request.address.ip}, {request.address.port}, {request.address.address_type}")
-        
+
+        logger.info(
+            f"Connection Established: {request.address.name}, {request.address.ip}, {request.address.port}, {request.address.address_type}"
+        )
+
         try:
             match request.command:
                 case CommandCodes.CONNECT.value:
                     # CONNECT
                     reply = self.handle_connect(request.address)
-                    
+
                 case CommandCodes.BIND.value:
                     # TODO: BIND
                     reply = self.handle_bind(request.address)
-                    
+
                 case CommandCodes.UDP_ASSOCIATE.value:
                     # TODO: UDP ASSOCIATE
                     reply = self.handle_udp_associate(request.address)
-                    
+
                 case _:
                     # Invalid command
                     reply = generate_command_not_supported_reply()
-                    
+
         except ConnectionRefusedError:
-            logger.error(f"Connection refused: {request.address.name}, {request.address.ip}:{request.address.port}")
+            logger.error(
+                f"Connection refused: {request.address.name}, {request.address.ip}:{request.address.port}"
+            )
             reply = generate_connection_refused_reply()
         except socket.gaierror:
-            logger.error(f"Host unreachable: {request.address.name}, {request.address.ip}:{request.address.port}")
+            logger.error(
+                f"Host unreachable: {request.address.name}, {request.address.ip}:{request.address.port}"
+            )
             reply = generate_host_unreachable_reply()
         except Exception as e:
             logger.error(f"Exception: {e}")
             reply = generate_general_socks_server_failure_reply()
-            
+
         finally:
             if reply is not None:
                 try:
@@ -88,13 +95,13 @@ class SocksProxy(StreamRequestHandler):
             address.address_type, bind_address[0], bind_address[1]
         )
         self.connection.sendall(success_reply)
-        
+
         DataRelay.relay_data(self.connection, remote)
-        
+
     def handle_bind(self, address: Address) -> bytes:
         logger.error("BIND command not supported")
         return generate_command_not_supported_reply()
-    
+
     def handle_udp_associate(self, address: Address) -> bytes:
         logger.error("UDP ASSOCIATE command not supported")
         return generate_command_not_supported_reply()
