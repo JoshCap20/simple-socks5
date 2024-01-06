@@ -134,7 +134,7 @@ class RequestHandler:
             match address_type:
                 case AddressTypeCodes.IPv4.value:
                     address: str = socket.inet_ntoa(self.connection.recv(4))
-                    domain_name: str = socket.gethostbyaddr(address)[0]
+                    domain_name: str = self._gethostbyaddr(address)
                 case AddressTypeCodes.DOMAIN_NAME.value:
                     domain_length = self.connection.recv(1)[0]
                     domain_name = self.connection.recv(domain_length)
@@ -142,7 +142,7 @@ class RequestHandler:
                     address_type = AddressTypeCodes.IPv4.value
                 case AddressTypeCodes.IPv6.value:
                     address: str = socket.inet_ntop(socket.AF_INET6, self.connection.recv(16))
-                    domain_name: str = socket.gethostbyaddr(address)[0]
+                    domain_name: str = self._gethostbyaddr(address)
                 case _:
                     raise InvalidRequestError(address_type)
 
@@ -154,3 +154,12 @@ class RequestHandler:
         except socket.error as e:
             logger.error(f"Socket error during address and port parsing: {e}")
             raise socket.error(e)
+        
+    def _gethostbyaddr(self, ip: str) -> None:
+        try:
+            return socket.gethostbyaddr(ip)[0]
+        except OSError:
+            return ip
+        except Exception as e:
+            logger.error(f"Exception setting hostname: {e}")
+            return ip
