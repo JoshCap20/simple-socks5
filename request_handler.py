@@ -138,8 +138,8 @@ class RequestHandler:
                     address: str = socket.inet_ntoa(self.connection.recv(4))
                     domain_name: str = self._gethostbyaddr(address)
                 case AddressTypeCodes.DOMAIN_NAME.value:
-                    domain_length: int = int(self.connection.recv(1)[0])
-                    domain_name: str = str(self.connection.recv(domain_length))
+                    domain_length = self.connection.recv(1)[0]
+                    domain_name = self.connection.recv(domain_length)
                     address: str = socket.gethostbyname(domain_name)
                     address_type = AddressTypeCodes.IPv4.value
                 case AddressTypeCodes.IPv6.value:
