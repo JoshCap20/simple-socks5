@@ -76,12 +76,14 @@ class RequestHandler:
             version = self.connection.recv(1)
             if not version or version != b"\x01":
                 logger.error(f"Incorrect subnegotiation version: {version}")
+                self.connection.sendall(b"\x01\x01")
                 return False
 
             # Receive username length and username
             username_len_byte = self.connection.recv(1)
             if not username_len_byte:
                 logger.error("No username length byte received")
+                self.connection.sendall(b"\x01\x01")
                 return False
             username_len = ord(username_len_byte)
             username = (
@@ -92,6 +94,7 @@ class RequestHandler:
             password_len_byte = self.connection.recv(1)
             if not password_len_byte:
                 logger.error("No password length byte received")
+                self.connection.sendall(b"\x01\x01")
                 return False
             password_len = ord(password_len_byte)
             password = (
