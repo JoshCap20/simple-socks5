@@ -12,8 +12,10 @@ from utils import (
     generate_succeeded_reply,
     generate_socket
 )
-from logger import logger
+from logger import get_logger
 from models import Request, Address
+
+logger = get_logger(__name__)
 
 class ThreadingTCPServer(ThreadingMixIn, TCPServer):
     """A threading version of TCP server."""

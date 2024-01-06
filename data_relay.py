@@ -1,7 +1,10 @@
+import os
 import select
 import socket
-from logger import logger
+from logger import get_logger
 
+verbose = os.environ.get("VERBOSE", "0") == "1"
+logger = get_logger(__name__, verbose=verbose)
 
 class DataRelay:
     @staticmethod
@@ -27,20 +30,20 @@ class DataRelay:
                     data: bytes = sock.recv(4096)
                     if not data:
                         logger.info(
-                            f"Closing connection: {sock.getpeername()} <-> {other_address}"
+                            f"Connection Closed: {sock.getpeername()} <-> {other_address}"
                         )
                         return
                     while data:
                         sent: int = other_sock.send(data)
-                        logger.info(
+                        logger.debug(
                             f"Data relayed: {sock.getpeername()} -> {other_address}, Size: {len(data)} bytes"
                         )
                         data = data[sent:]
 
         except BrokenPipeError as e:
-            logger.error(f"Caught BrokenPipeError: {e}")
+            logger.exception(f"Broken Pipe: {e}")
         except ConnectionResetError as e:
-            logger.error(f"Caught ConnectionResetError: {e}")
+            logger.exception(f"Connection Reset: {e}")
         finally:
             for sock in [client_socket, remote_socket]:
                 try:
