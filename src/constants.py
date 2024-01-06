@@ -2,8 +2,12 @@ from enum import Enum
 
 SOCKS_VERSION: int = 5
 
+# Sample username and password for testing
+
 USERNAME: str = "myusername"
 PASSWORD: str = "mypassword"
+
+# See https://www.ietf.org/rfc/rfc1928.txt for more information about the below codes
 
 
 class MethodCodes(Enum):

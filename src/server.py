@@ -19,46 +19,62 @@ logger = get_logger(__name__)
 
 
 class ThreadingTCPServer(ThreadingMixIn, TCPServer):
-    """A threading version of TCP server."""
+    """
+    A threading version of TCP server.
+
+    https://docs.python.org/3/library/socketserver.html#socketserver.ThreadingMixIn
+    """
 
     pass
 
 
 class SocksProxy(StreamRequestHandler):
-    connection: socket.socket
+    """
+    For each connection, a new instance of this class is created.
 
+    https://docs.python.org/3/library/socketserver.html#socketserver.StreamRequestHandler
+    """
+
+    connection: socket.socket
+    server: ThreadingTCPServer
+    
     def handle(self):
+        """
+        This function must do all the work required to service a request.
+
+        Available:
+            connection: The new socket.socket object to be used to communicate with the client.
+            client_address: Client address returned by BaseServer.get_request().
+            server: BaseServer object used for handling the request.
+        """
         request_handler = RequestHandler(self.connection)
 
         if not request_handler.handle_handshake():
             logger.error("Handshake failed")
+            self.server.shutdown_request(self.request)
             return
 
-        if not request_handler.client_authenticated:
-            logger.error("Client not authenticated")
-            return
-
-        request: Request = request_handler.parse_request()
+        conn_request: Request = request_handler.parse_request()
 
         reply: bytes | None = None
 
         logger.info(
-            f"Connection Established: {request.address.name}, {request.address.ip}, {request.address.port}, {request.address.address_type}"
+            f"Connection Established: {conn_request.address.name}, {conn_request.address.ip}, {conn_request.address.port}, {conn_request.address.address_type}"
         )
 
         try:
-            match request.command:
+            match conn_request.command:
                 case CommandCodes.CONNECT.value:
                     # CONNECT
-                    reply = self.handle_connect(request.address)
+                    reply = self.handle_connect(conn_request.address)
 
                 case CommandCodes.BIND.value:
                     # TODO: BIND
-                    reply = self.handle_bind(request.address)
+                    reply = self.handle_bind(conn_request.address)
 
                 case CommandCodes.UDP_ASSOCIATE.value:
                     # TODO: UDP ASSOCIATE
-                    reply = self.handle_udp_associate(request.address)
+                    reply = self.handle_udp_associate(conn_request.address)
 
                 case _:
                     # Invalid command
@@ -66,12 +82,12 @@ class SocksProxy(StreamRequestHandler):
 
         except ConnectionRefusedError:
             logger.error(
-                f"Connection refused: {request.address.name}, {request.address.ip}:{request.address.port}"
+                f"Connection refused: {conn_request.address.name}, {conn_request.address.ip}:{conn_request.address.port}"
             )
             reply = generate_connection_refused_reply()
         except socket.gaierror:
             logger.error(
-                f"Host unreachable: {request.address.name}, {request.address.ip}:{request.address.port}"
+                f"Host unreachable: {conn_request.address.name}, {conn_request.address.ip}:{conn_request.address.port}"
             )
             reply = generate_host_unreachable_reply()
         except Exception as e:
@@ -87,6 +103,9 @@ class SocksProxy(StreamRequestHandler):
             self.server.shutdown_request(self.request)
 
     def handle_connect(self, address: Address) -> None:
+        """
+        Handles CONNECT command.
+        """
         remote: socket.socket = generate_socket(address)
         remote.connect((address.ip, address.port))
         bind_address: socket._RetAddress = remote.getsockname()
@@ -99,9 +118,21 @@ class SocksProxy(StreamRequestHandler):
         DataRelay.relay_data(self.connection, remote)
 
     def handle_bind(self, address: Address) -> bytes:
+        """
+        Handles BIND command.
+        """
         logger.error("BIND command not supported")
         return generate_command_not_supported_reply()
 
     def handle_udp_associate(self, address: Address) -> bytes:
+        """
+        Handles UDP ASSOCIATE command.
+        """
         logger.error("UDP ASSOCIATE command not supported")
         return generate_command_not_supported_reply()
+
+    def finish(self):
+        """
+        Called after handle() to perform any clean-up actions required.
+        """
+        self.connection.close()
