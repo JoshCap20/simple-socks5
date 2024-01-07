@@ -74,7 +74,7 @@ class TCPProxyServer(StreamRequestHandler):
                     reply = self.handle_bind(conn_request.address)
 
                 case CommandCodes.UDP_ASSOCIATE.value:
-                    # TODO: UDP ASSOCIATE
+                    # UDP ASSOCIATE
                     reply = self.handle_udp_associate(conn_request.address)
 
                 case _:
