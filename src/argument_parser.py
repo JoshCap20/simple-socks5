@@ -9,20 +9,32 @@ def parse_arguments():
         "--host",
         type=str,
         default="localhost",
-        help="Host address for the SOCKS server",
+        help="Host address for the SOCKS server. Default: localhost.",
     )
     parser.add_argument(
-        "-P", "--port", type=int, default=9999, help="Port number for the SOCKS server"
+        "-P",
+        "--port",
+        type=int,
+        default=1080,
+        help="Port number for the SOCKS server. Default: 1080.",
     )
     parser.add_argument(
-        "-Q",
-        "--quiet",
-        action="store_false",
-        dest="verbose",
-        help="Disable verbose logging (verbose is enabled by default)",
+        "-L",
+        "--logging-level",
+        type=int,
+        choices=range(0, 6),
+        default=1,
+        help=(
+            "Set the logging level. 0 = disabled, "
+            "1 = debug, 2 = info, 3 = warning, 4 = error, 5 = critical. "
+            "Default: 1 (debug)."
+        ),
     )
     args = parser.parse_args()
 
-    os.environ["VERBOSE"] = "1" if args.verbose else "0"
+    if args.logging_level is not None:
+        os.environ["LOGGING_LEVEL"] = str(args.logging_level)
+    else:
+        os.environ["DISABLE_LOGGING"] = "1"
 
     return args
