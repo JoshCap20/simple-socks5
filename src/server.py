@@ -1,9 +1,9 @@
 import socket
-from socketserver import ThreadingMixIn, TCPServer, StreamRequestHandler
+from socketserver import StreamRequestHandler
 
 from .constants import CommandCodes
 from .request_handlers import TCPRequestHandler
-from .data_relay import DataRelay
+from .relays import TCPRelay, UDPRelay
 from .utils import (
     generate_general_socks_server_failure_reply,
     generate_command_not_supported_reply,
@@ -14,13 +14,14 @@ from .utils import (
 )
 from .logger import get_logger
 from .models import Request, Address
+from socketserver import ThreadingMixIn, TCPServer
 
 logger = get_logger(__name__)
 
 
 class ThreadingTCPServer(ThreadingMixIn, TCPServer):
     """
-    A threading version of TCP server.
+    A threading version of a TCP server.
 
     https://docs.python.org/3/library/socketserver.html#socketserver.ThreadingMixIn
     """
@@ -28,7 +29,7 @@ class ThreadingTCPServer(ThreadingMixIn, TCPServer):
     pass
 
 
-class SocksProxy(StreamRequestHandler):
+class TCPProxyServer(StreamRequestHandler):
     """
     For each connection, a new instance of this class is created.
 
@@ -47,10 +48,9 @@ class SocksProxy(StreamRequestHandler):
             client_address: Client address returned by BaseServer.get_request().
             server: BaseServer object used for handling the request.
         """
-        # TODO: Handle TCP or UDP connections
         request_handler = TCPRequestHandler(self.connection)
 
-        if not request_handler.handle_handshake():
+        if not request_handler.handle_request():
             logger.error("Handshake failed")
             self.server.shutdown_request(self.request)
             return
@@ -74,7 +74,7 @@ class SocksProxy(StreamRequestHandler):
                     reply = self.handle_bind(conn_request.address)
 
                 case CommandCodes.UDP_ASSOCIATE.value:
-                    # TODO: UDP ASSOCIATE
+                    # UDP ASSOCIATE
                     reply = self.handle_udp_associate(conn_request.address)
 
                 case _:
@@ -116,20 +116,30 @@ class SocksProxy(StreamRequestHandler):
         )
         self.connection.sendall(success_reply)
 
-        DataRelay.relay_data(self.connection, remote)
+        TCPRelay.relay_data(self.connection, remote, address, bind_address)
+
+    def handle_udp_associate(self, address: Address) -> None:
+        """
+        Handles UDP ASSOCIATE command.
+        """
+        # Allocate port for UDP relay
+        udp_relay = UDPRelay(address)
+        allocated_port = udp_relay.get_allocated_port()
+
+        # Send reply with allocated port and server IP
+        success_reply = generate_succeeded_reply(
+            address.address_type, self.server.server_address[0], allocated_port  # type: ignore
+        )
+        self.connection.sendall(success_reply)
+
+        # Start UDP relay
+        udp_relay.listen_and_relay()
 
     def handle_bind(self, address: Address) -> bytes:
         """
         Handles BIND command.
         """
         logger.error("BIND command not supported")
-        return generate_command_not_supported_reply()
-
-    def handle_udp_associate(self, address: Address) -> bytes:
-        """
-        Handles UDP ASSOCIATE command.
-        """
-        logger.error("UDP ASSOCIATE command not supported")
         return generate_command_not_supported_reply()
 
     def finish(self):

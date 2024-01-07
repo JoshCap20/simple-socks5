@@ -22,7 +22,7 @@ class TCPRequestHandler(BaseRequestHandler):
         """
         self.connection = connection
 
-    def handle_handshake(self) -> bool:
+    def handle_request(self) -> bool:
         """
         Procedure for TCP-based clients per RFC 1928.
 

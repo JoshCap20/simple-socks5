@@ -8,20 +8,24 @@ def main():
     """
     args = parse_arguments()
 
-    from .server import ThreadingTCPServer, SocksProxy
+    # Import here to allow setting the logging level before logger is imported
+    from .server import (
+        ThreadingTCPServer,
+        TCPProxyServer,
+    )
     from .logger import get_logger
 
     logger = get_logger(__name__)
 
-    with ThreadingTCPServer((args.host, args.port), SocksProxy) as server:
-        logger.info(f"Server started on {args.host}:{args.port}")
+    with ThreadingTCPServer((args.host, args.port), TCPProxyServer) as tcp_server:
+        logger.info(f"Proxy server started on {args.host}:{args.port}")
+
         try:
-            server.serve_forever()
+            tcp_server.serve_forever()
         except KeyboardInterrupt:
             logger.info("Server shutting down...")
+            tcp_server.shutdown()
         finally:
-            server.server_close()
-            server.shutdown()
             logger.info("Server terminated.")
 
 

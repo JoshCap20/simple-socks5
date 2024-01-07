@@ -2,18 +2,24 @@ import select
 import socket
 from functools import lru_cache
 
-from .logger import get_logger
+from ..models import Address
+from ..logger import get_logger
 
 logger = get_logger(__name__)
 
 
-class DataRelay:
+class TCPRelay:
     """
     Class responsible for relaying data between a client socket and a remote socket.
     """
 
     @staticmethod
-    def relay_data(client_socket: socket.socket, remote_socket: socket.socket) -> None:
+    def relay_data(
+        client_socket: socket.socket,
+        remote_socket: socket.socket,
+        remote_address: Address,
+        bind_address: tuple[str, int],
+    ) -> None:
         """
         Relays data between the client socket and the remote socket.
 
@@ -24,11 +30,16 @@ class DataRelay:
         Returns:
             None
         """
-        client_address: socket._RetAddress = client_socket.getpeername()
-        remote_address: socket._RetAddress = remote_socket.getpeername()
+        # Metadata for logging
+        client_info: dict[str : str | int] = TCPRelay.resolve_address_info(
+            ip=bind_address[0], port=bind_address[1]
+        )
 
-        client_info = DataRelay.resolve_address_info(*client_address)
-        remote_info = DataRelay.resolve_address_info(*remote_address)
+        remote_info: dict[str : str | int] = {
+            "domain": remote_address.name,
+            "ip": remote_socket.getpeername()[0],
+            "port": remote_address.port,
+        }
 
         try:
             while True:
@@ -38,9 +49,12 @@ class DataRelay:
                 )
 
                 for sock in readable_sockets:
+                    # Determine which socket is available for read
                     other_sock = (
                         remote_socket if sock is client_socket else client_socket
                     )
+
+                    # Metadata for logging
                     other_info = remote_info if sock is client_socket else client_info
                     sock_info = client_info if sock is client_socket else remote_info
 
@@ -77,7 +91,7 @@ class DataRelay:
 
     @staticmethod
     @lru_cache(maxsize=1024)
-    def resolve_address_info(ip: str, port: int) -> dict:
+    def resolve_address_info(ip: str, port: int) -> dict[str, str | int]:
         """
         Resolves the domain name, IP, and port from a given address.
         Supports both IPv4 and IPv6 addresses.
