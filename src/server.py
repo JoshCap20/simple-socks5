@@ -107,16 +107,18 @@ class TCPProxyServer(StreamRequestHandler):
         """
         Handles CONNECT command.
         """
-        remote: socket.socket = generate_socket(address)
-        remote.connect((address.ip, address.port))
-        bind_address: socket._RetAddress = remote.getsockname()
+        # Allocate port for TCP relay
+        tcp_relay = TCPRelay(self.connection, address)
+        bind_address = tcp_relay.get_allocated_address()
 
+        # Send reply with bind address and port
         success_reply = generate_succeeded_reply(
             address.address_type, bind_address[0], bind_address[1]
         )
         self.connection.sendall(success_reply)
 
-        TCPRelay.relay_data(self.connection, remote, address, bind_address)
+        # Start TCP relay
+        tcp_relay.listen_and_relay()
 
     def handle_udp_associate(self, address: Address) -> None:
         """
