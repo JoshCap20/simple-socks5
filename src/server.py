@@ -3,7 +3,7 @@ from socketserver import StreamRequestHandler
 
 from .constants import CommandCodes
 from .request_handlers import TCPRequestHandler
-from .relays import TCPRelay
+from .relays import TCPRelay, UDPRelay
 from .utils import (
     generate_general_socks_server_failure_reply,
     generate_command_not_supported_reply,
@@ -75,7 +75,6 @@ class TCPProxyServer(StreamRequestHandler):
 
                 case CommandCodes.UDP_ASSOCIATE.value:
                     # TODO: UDP ASSOCIATE
-                    print(conn_request)
                     reply = self.handle_udp_associate(conn_request.address)
 
                 case _:
@@ -119,18 +118,28 @@ class TCPProxyServer(StreamRequestHandler):
 
         TCPRelay.relay_data(self.connection, remote, address, bind_address)
 
+    def handle_udp_associate(self, address: Address) -> None:
+        """
+        Handles UDP ASSOCIATE command.
+        """
+        # Allocate port for UDP relay
+        udp_relay = UDPRelay(address)
+        allocated_port = udp_relay.get_allocated_port()
+
+        # Send reply with allocated port and server IP
+        success_reply = generate_succeeded_reply(
+            address.address_type, self.server.server_address[0], allocated_port  # type: ignore
+        )
+        self.connection.sendall(success_reply)
+
+        # Start UDP relay
+        udp_relay.listen_and_relay()
+
     def handle_bind(self, address: Address) -> bytes:
         """
         Handles BIND command.
         """
         logger.error("BIND command not supported")
-        return generate_command_not_supported_reply()
-
-    def handle_udp_associate(self, address: Address) -> bytes:
-        """
-        Handles UDP ASSOCIATE command.
-        """
-        logger.error("UDP ASSOCIATE command not supported")
         return generate_command_not_supported_reply()
 
     def finish(self):
