@@ -50,7 +50,7 @@ class SocksProxy(StreamRequestHandler):
         # TODO: Handle TCP or UDP connections
         request_handler = TCPRequestHandler(self.connection)
 
-        if not request_handler.handle_handshake():
+        if not request_handler.handle_request():
             logger.error("Handshake failed")
             self.server.shutdown_request(self.request)
             return
@@ -116,7 +116,7 @@ class SocksProxy(StreamRequestHandler):
         )
         self.connection.sendall(success_reply)
 
-        DataRelay.relay_data(self.connection, remote)
+        DataRelay.relay_data(self.connection, remote, address, bind_address)
 
     def handle_bind(self, address: Address) -> bytes:
         """

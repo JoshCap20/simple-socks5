@@ -36,7 +36,7 @@ class TestTCPRequestHandlerIPv4(unittest.TestCase):
     def test_handle_handshake__incorrect_version(self, mock_recv):
         mock_recv.side_effect = [REQ_INCORRECT_VERSION]
         with self.assertRaises(InvalidVersionError):
-            self.handler.handle_handshake()
+            self.handler.handle_request()
 
     @patch("socket.socket.recv")
     @patch("socket.socket.sendall")
@@ -44,7 +44,7 @@ class TestTCPRequestHandlerIPv4(unittest.TestCase):
         self, mock_sendall, mock_recv
     ):
         mock_recv.side_effect = CORRECT_VERSION_NO_AUTH_REQUIRED
-        result = self.handler.handle_handshake()
+        result = self.handler.handle_request()
         mock_sendall.assert_called_with(RESP_CORRECT_VERSION_NO_AUTH_REQUIRED)
 
     @patch("socket.socket.recv")
@@ -62,7 +62,7 @@ class TestTCPRequestHandlerIPv4(unittest.TestCase):
             chr(len(password)).encode(),
             password.encode(),
         ]
-        result = self.handler.handle_handshake()
+        result = self.handler.handle_request()
         mock_sendall.assert_called_with(RESP_LOGIN_SUCCESS)
 
     @patch("socket.socket.recv")
@@ -80,7 +80,7 @@ class TestTCPRequestHandlerIPv4(unittest.TestCase):
             chr(len(password)).encode(),
             password.encode(),
         ]
-        result = self.handler.handle_handshake()
+        result = self.handler.handle_request()
         mock_sendall.assert_called_with(RESP_LOGIN_FAILURE)
 
     @patch("socket.socket.recv")
@@ -98,7 +98,7 @@ class TestTCPRequestHandlerIPv4(unittest.TestCase):
             chr(len(password)).encode(),
             password.encode(),
         ]
-        result = self.handler.handle_handshake()
+        result = self.handler.handle_request()
         mock_sendall.assert_called_with(RESP_LOGIN_FAILURE)
 
     def test_authenticate_with_username_password_method(self):

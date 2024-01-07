@@ -22,6 +22,12 @@ class BaseRequestHandler:
         """
         self.connection = connection
 
+    def handle_request(self) -> bool:
+        """
+        Implemented in TCP and UDP request handlers.
+        """
+        raise NotImplementedError
+
     def parse_request(self) -> Request:
         """
         Handles requests of the form:
