@@ -2,9 +2,9 @@ import unittest
 from unittest.mock import MagicMock, patch
 import struct
 import socket
-from src.request_handler import RequestHandler
+from src.request_handlers.tcp import TCPRequestHandler
 from src.exceptions import InvalidVersionError, InvalidRequestError
-from src.constants import SOCKS_VERSION, AddressTypeCodes
+from src.constants import SOCKS_VERSION, AddressTypeCodes, MethodCodes
 from src.models import Address, Request
 
 # Testing Data
@@ -24,10 +24,10 @@ RESP_LOGIN_SUCCESS = b"\x01\x00"
 RESP_LOGIN_FAILURE = b"\x01\x01"
 
 
-class TestRequestHandlerIPv4(unittest.TestCase):
+class TestTCPRequestHandlerIPv4(unittest.TestCase):
     def setUp(self):
         self.connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.handler = RequestHandler(self.connection)
+        self.handler = TCPRequestHandler(self.connection)
 
     def tearDown(self):
         self.connection.close()
@@ -101,38 +101,25 @@ class TestRequestHandlerIPv4(unittest.TestCase):
         result = self.handler.handle_handshake()
         mock_sendall.assert_called_with(RESP_LOGIN_FAILURE)
 
-    @patch("socket.socket.sendall")
-    def test_authenticate_with_no_authentication_required(self, mock_sendall):
-        methods = b"\x00"
-        result = self.handler._authenticate(methods)
-        mock_sendall.assert_called_with(RESP_CORRECT_VERSION_NO_AUTH_REQUIRED)
-        self.assertTrue(result)
-
-    @patch("socket.socket.recv")
-    @patch("socket.socket.sendall")
-    def test_authenticate_with_username_password(self, mock_sendall, mock_recv):
+    def test_authenticate_with_username_password_method(self):
         methods = b"\x02"
-        mock_recv.side_effect = [
-            b"\x01",
-            b"\x08",
-            b"myusername",
-            b"\x08",
-            b"mypassword",
-        ]
-        result = self.handler._authenticate(methods)
-        mock_sendall.assert_called_with(RESP_LOGIN_SUCCESS)
-        self.assertTrue(result)
+        result = self.handler._negotiate_authentication_method(methods)
+        self.assertEqual(result, MethodCodes.USERNAME_PASSWORD)
 
-    @patch("socket.socket.sendall")
-    def test_authenticate_with_invalid_methods(self, mock_sendall):
+    def test_authenticate_with_no_authentication_required(self):
+        methods = b"\x00"
+        result = self.handler._negotiate_authentication_method(methods)
+        self.assertEqual(result, MethodCodes.NO_AUTHENTICATION_REQUIRED)
+
+    def test_authenticate_with_invalid_methods(self):
         methods = b"\xFF"
-        result = self.handler._authenticate(methods)
-        mock_sendall.assert_called_with(RESP_CORRECT_VERSION_NO_ACCEPTABLE_METHODS)
-        self.assertFalse(result)
+        result = self.handler._negotiate_authentication_method(methods)
+        self.assertEqual(result, MethodCodes.NO_ACCEPTABLE_METHODS)
 
     @patch("socket.socket.recv")
     @patch("socket.socket.sendall")
-    def test_handle_username_password_auth(self, mock_sendall, mock_recv):
+    def test_handle_username_password_auth__valid(self, mock_sendall, mock_recv):
+        methods = b"\x02"
         mock_recv.side_effect = [
             b"\x01",
             b"\x08",

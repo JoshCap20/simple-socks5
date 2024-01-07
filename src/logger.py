@@ -1,4 +1,7 @@
+import os
 import logging
+
+verbosity = int(os.environ.get("LOGGING_LEVEL", 1))
 
 
 class LogColors:
@@ -26,26 +29,28 @@ class ColorFormatter(logging.Formatter):
         return message
 
 
-def get_logger(name: str, verbose=True) -> logging.Logger:
+def get_logger(name: str) -> logging.Logger:
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
 
-    # Console Handler for logging info and above
-    c_handler = logging.StreamHandler()
-    console_level = logging.DEBUG if verbose else logging.INFO
-    c_handler.setLevel(console_level)
-    c_format = ColorFormatter("[%(asctime)s] - [%(levelname)s] - %(message)s")
-    c_handler.setFormatter(c_format)
+    if verbosity != 0:
+        # Console Handler for logging
+        c_handler = logging.StreamHandler()
+        c_handler.setLevel(verbosity * 10)
+        c_format = ColorFormatter("[%(asctime)s] - [%(levelname)s] - %(message)s")
+        c_handler.setFormatter(c_format)
 
-    # File Handler for logging errors only
-    f_handler = logging.FileHandler("errors.log")
-    f_handler.setLevel(logging.ERROR)
-    f_format = logging.Formatter(
-        "[%(asctime)s] - [%(name)s] - [%(levelname)s] - [%(message)s]"
-    )
-    f_handler.setFormatter(f_format)
+        # File Handler for logging errors only
+        f_handler = logging.FileHandler("errors.log")
+        f_handler.setLevel(logging.ERROR)
+        f_format = logging.Formatter(
+            "[%(asctime)s] - [%(name)s] - [%(levelname)s] - [%(message)s]"
+        )
+        f_handler.setFormatter(f_format)
 
-    logger.addHandler(c_handler)
-    logger.addHandler(f_handler)
+        logger.addHandler(c_handler)
+        logger.addHandler(f_handler)
+    else:
+        logger.addHandler(logging.NullHandler())
 
     return logger
