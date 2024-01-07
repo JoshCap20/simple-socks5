@@ -2,7 +2,7 @@ import socket
 from socketserver import ThreadingMixIn, TCPServer, StreamRequestHandler
 
 from .constants import CommandCodes
-from .request_handler import RequestHandler
+from .request_handlers import TCPRequestHandler
 from .data_relay import DataRelay
 from .utils import (
     generate_general_socks_server_failure_reply,
@@ -37,7 +37,7 @@ class SocksProxy(StreamRequestHandler):
 
     connection: socket.socket
     server: ThreadingTCPServer
-    
+
     def handle(self):
         """
         This function must do all the work required to service a request.
@@ -47,7 +47,8 @@ class SocksProxy(StreamRequestHandler):
             client_address: Client address returned by BaseServer.get_request().
             server: BaseServer object used for handling the request.
         """
-        request_handler = RequestHandler(self.connection)
+        # TODO: Handle TCP or UDP connections
+        request_handler = TCPRequestHandler(self.connection)
 
         if not request_handler.handle_handshake():
             logger.error("Handshake failed")
