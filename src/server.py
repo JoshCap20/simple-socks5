@@ -1,9 +1,9 @@
 import socket
-from socketserver import ThreadingMixIn, TCPServer, StreamRequestHandler
+from socketserver import StreamRequestHandler
 
 from .constants import CommandCodes
 from .request_handlers import TCPRequestHandler
-from .data_relay import DataRelay
+from .relays import TCPRelay
 from .utils import (
     generate_general_socks_server_failure_reply,
     generate_command_not_supported_reply,
@@ -14,13 +14,14 @@ from .utils import (
 )
 from .logger import get_logger
 from .models import Request, Address
+from socketserver import ThreadingMixIn, TCPServer
 
 logger = get_logger(__name__)
 
 
 class ThreadingTCPServer(ThreadingMixIn, TCPServer):
     """
-    A threading version of TCP server.
+    A threading version of a TCP server.
 
     https://docs.python.org/3/library/socketserver.html#socketserver.ThreadingMixIn
     """
@@ -28,7 +29,7 @@ class ThreadingTCPServer(ThreadingMixIn, TCPServer):
     pass
 
 
-class SocksProxy(StreamRequestHandler):
+class TCPProxyServer(StreamRequestHandler):
     """
     For each connection, a new instance of this class is created.
 
@@ -47,7 +48,6 @@ class SocksProxy(StreamRequestHandler):
             client_address: Client address returned by BaseServer.get_request().
             server: BaseServer object used for handling the request.
         """
-        # TODO: Handle TCP or UDP connections
         request_handler = TCPRequestHandler(self.connection)
 
         if not request_handler.handle_request():
@@ -75,6 +75,7 @@ class SocksProxy(StreamRequestHandler):
 
                 case CommandCodes.UDP_ASSOCIATE.value:
                     # TODO: UDP ASSOCIATE
+                    print(conn_request)
                     reply = self.handle_udp_associate(conn_request.address)
 
                 case _:
@@ -116,7 +117,7 @@ class SocksProxy(StreamRequestHandler):
         )
         self.connection.sendall(success_reply)
 
-        DataRelay.relay_data(self.connection, remote, address, bind_address)
+        TCPRelay.relay_data(self.connection, remote, address, bind_address)
 
     def handle_bind(self, address: Address) -> bytes:
         """

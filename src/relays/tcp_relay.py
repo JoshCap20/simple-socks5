@@ -2,13 +2,13 @@ import select
 import socket
 from functools import lru_cache
 
-from .models import Address
-from .logger import get_logger
+from ..models import Address
+from ..logger import get_logger
 
 logger = get_logger(__name__)
 
 
-class DataRelay:
+class TCPRelay:
     """
     Class responsible for relaying data between a client socket and a remote socket.
     """
@@ -31,7 +31,7 @@ class DataRelay:
             None
         """
         # Metadata for logging
-        client_info: dict[str : str | int] = DataRelay.resolve_address_info(
+        client_info: dict[str : str | int] = TCPRelay.resolve_address_info(
             ip=bind_address[0], port=bind_address[1]
         )
 
