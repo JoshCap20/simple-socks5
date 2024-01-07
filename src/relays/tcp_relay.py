@@ -1,77 +1,77 @@
 import select
 import socket
-from functools import lru_cache
 
+
+from .base import BaseRelay
 from ..models import Address
 from ..logger import get_logger
-from ..utils import generate_socket
+from ..utils import generate_tcp_socket
 
 logger = get_logger(__name__)
 
 
-class TCPRelay:
+class TCPRelay(BaseRelay):
     """
-    Class responsible for relaying data between a client socket and a remote socket.
+    Class responsible for relaying data between a client socket and a remote socket via TCP.
     """
 
-    connection: socket.socket
-    tcp_socket: socket.socket
-    address: Address
-    bind_address: tuple[str, int]
-
-    def __init__(self, connection: socket.socket, address: Address):
+    def __init__(self, client_connection: socket.socket, dst_address: Address):
         """
         Initializes a new instance of the TCPRelay class.
 
         Args:
-            address (Address): The address to connect to.
+            connection (socket.socket): The client socket.
+            dst_address (Address): The address to connect to.
         """
-        self.connection = connection
-        self.address = address
-        self.tcp_socket = generate_socket(address)
-        self.tcp_socket.connect((address.ip, address.port))
-        self.bind_address = self.tcp_socket.getsockname()
+        super().__init__(client_connection, dst_address)
+        self.generate_proxy_connection()
+
+    def generate_proxy_connection(self) -> None:
+        """
+        Generates a new proxy connection.
+        """
+        self.proxy_connection = generate_tcp_socket(self.dst_address.address_type)
+        self.proxy_connection.connect((self.dst_address.ip, self.dst_address.port))
+        self.set_proxy_address()
 
     def listen_and_relay(self) -> None:
         """
         Relays data between the client socket and the remote socket.
         """
-        # Metadata for logging
-        client_info: dict[str, str | int] = TCPRelay.resolve_address_info(
-            ip=self.bind_address[0], port=self.bind_address[1]
-        )
-
-        remote_info: dict[str, str | int] = {
-            "domain": self.address.name,
-            "ip": self.tcp_socket.getpeername()[0],
-            "port": self.address.port,
-        }
 
         try:
             while True:
                 # Wait until client or remote is available for read
                 readable_sockets, _, _ = select.select(
-                    [self.connection, self.tcp_socket], [], []
+                    [self.client_connection, self.proxy_connection], [], []
                 )
 
                 for sock in readable_sockets:
                     # Determine which socket is available for read
                     other_sock = (
-                        self.tcp_socket if sock is self.connection else self.connection
+                        self.proxy_connection
+                        if sock is self.client_connection
+                        else self.client_connection
                     )
 
                     # Metadata for logging
-                    other_info = remote_info if sock is self.connection else client_info
-                    sock_info = client_info if sock is self.connection else remote_info
+                    other_info: Address = (
+                        self.get_dst_address()
+                        if sock is self.client_connection
+                        else self.get_client_address()
+                    )
+                    sock_info: Address = (
+                        self.get_client_address()
+                        if sock is self.client_connection
+                        else self.get_dst_address()
+                    )
 
                     # Receive data from socket
                     data: bytes = sock.recv(4096)
 
                     if not data:
                         # No data received, connection closed
-                        logger.info(
-                            f"Connection closed: {client_info} <-> {remote_info}"
-                        )
+                        logger.info(f"Connection closed: {sock_info} <-> {other_info}")
                         return
 
                     while data:
@@ -87,30 +87,5 @@ class TCPRelay:
         except ConnectionResetError as e:
             logger.exception(f"Connection Reset: {e}")
         finally:
-            for sock in [self.connection, self.tcp_socket]:
-                try:
-                    sock.shutdown(socket.SHUT_RDWR)
-                except Exception as e:
-                    pass
-                finally:
-                    sock.close()
-
-    @staticmethod
-    @lru_cache(maxsize=1024)
-    def resolve_address_info(ip: str, port: int) -> dict[str, str | int]:
-        """
-        Resolves the domain name, IP, and port from a given address.
-        Supports both IPv4 and IPv6 addresses.
-        """
-        try:
-            domain_name = socket.gethostbyaddr(ip)[0]
-        except socket.herror:
-            domain_name = "Unknown"
-
-        return {"domain": domain_name, "ip": ip, "port": port}
-
-    def get_allocated_address(self) -> tuple[str, int]:
-        """
-        Returns the allocated address and port.
-        """
-        return self.bind_address
+            for sock in [self.client_connection, self.proxy_connection]:
+                sock.close()
