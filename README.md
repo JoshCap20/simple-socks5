@@ -13,11 +13,11 @@ This is a simple SOCKS Protocol Version 5 server written in Python. It is based 
 
 ### Usage
 ```bash
-python3 app.py [--host HOST | -H HOST] [--port PORT | -P PORT] [--logging-level INT(0,6) | -L INT(0, 6)]
+python3 app.py [--host HOST | -H HOST] [--port PORT | -P PORT] [--logging-level 0-6 | -L 0-6]
 ```
 - `--host HOST` or `-H HOST`: The host address to bind to. Default is `localhost`. Use `0.0.0.0` to bind to all available interfaces.
 - `--port PORT` or `-P PORT`: The port number to bind to. Default is `9999`.
-- `--logging-level INT(0, 6)` or `-L INT(0, 6)`: Set logging level where 1 is debug, 5 is critical, and 0 is disabled.
+- `--logging-level 0-6` or `-L 0-6`: Set logging level where 1 is debug, 5 is critical, and 0 is disabled.
 
 ### RFC 1928 & RFC 1929 Compliance
 #### Covered Aspects
