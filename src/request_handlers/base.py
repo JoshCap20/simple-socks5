@@ -5,7 +5,7 @@ from ..constants import SOCKS_VERSION, AddressTypeCodes
 from ..exceptions import InvalidRequestError, InvalidVersionError
 from ..logger import get_logger
 from ..models import Address, Request
-from ..utils import map_address_type_to_enum
+from ..utils import map_address_int_to_enum
 
 logger = get_logger(__name__)
 
@@ -49,7 +49,7 @@ class BaseRequestHandler:
             o  DOMAINNAME: X'03'
             o  IP V6 address: X'04'
         o  DST.ADDR - desired destination address
-        o  DST.PORT -desired destination port in network octet order
+        o  DST.PORT - desired destination port in network octet order
 
 
         Args:
@@ -96,7 +96,7 @@ class BaseRequestHandler:
                 name=domain_name,
                 ip=address,
                 port=port,
-                address_type=map_address_type_to_enum(address_type),
+                address_type=map_address_int_to_enum(address_type),
             )
 
         except socket.error as e:

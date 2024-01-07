@@ -12,10 +12,10 @@ from src.utils import (
     generate_ttl_expired_reply,
     generate_command_not_supported_reply,
     translate_address_to_bytes,
-    map_address_type_to_enum,
+    map_address_int_to_enum,
     map_address_type_to_socket_family,
     generate_succeeded_reply,
-    generate_socket,
+    generate_tcp_socket,
 )
 from src.constants import AddressTypeCodes, MethodCodes
 
@@ -213,19 +213,19 @@ class TestConnectionMethodResponseUtils(unittest.TestCase):
 
 
 class TestMapAddressTypeUtils(unittest.TestCase):
-    def test_map_address_type_to_enum__ipv4(self):
+    def test_map_address_int_to_enum__ipv4(self):
         address_type = AddressTypeCodes.IPv4.value
-        expected_enum = map_address_type_to_enum(address_type)
+        expected_enum = map_address_int_to_enum(address_type)
         self.assertEqual(expected_enum, AddressTypeCodes.IPv4)
 
-    def test_map_address_type_to_enum__ipv6(self):
+    def test_map_address_int_to_enum__ipv6(self):
         address_type = AddressTypeCodes.IPv6.value
-        expected_enum = map_address_type_to_enum(address_type)
+        expected_enum = map_address_int_to_enum(address_type)
         self.assertEqual(expected_enum, AddressTypeCodes.IPv6)
 
-    def test_map_address_type_to_enum__domain_name(self):
+    def test_map_address_int_to_enum__domain_name(self):
         address_type = AddressTypeCodes.DOMAIN_NAME.value
-        expected_enum = map_address_type_to_enum(address_type)
+        expected_enum = map_address_int_to_enum(address_type)
         self.assertEqual(expected_enum, AddressTypeCodes.DOMAIN_NAME)
 
     def test_map_address_type_to_socket_family__ipv4(self):
@@ -277,31 +277,31 @@ class TestSuccessUtils(unittest.TestCase):
 
 
 class TestGenerateSocketUtils(unittest.TestCase):
-    def test_generate_socket__ipv4(self):
+    def test_generate_tcp_socket__ipv4(self):
         address = Address("Test Localhost", "127.0.0.1", 80, AddressTypeCodes.IPv4)
-        expected_socket = generate_socket(address)
+        expected_socket = generate_tcp_socket(address.address_type)
         self.assertIsInstance(expected_socket, socket.socket)
         self.assertEqual(expected_socket.family, socket.AF_INET)
         self.assertEqual(expected_socket.type, socket.SOCK_STREAM)
 
-    def test_generate_socket__ipv6(self):
+    def test_generate_tcp_socket__ipv6(self):
         address = Address(
             "Test Random IPv6 Address",
             "2606:2800:220:1:248:1893:25c8:1946",
             80,
             AddressTypeCodes.IPv6,
         )
-        expected_socket = generate_socket(address)
+        expected_socket = generate_tcp_socket(address.address_type)
         self.assertIsInstance(expected_socket, socket.socket)
         self.assertEqual(expected_socket.family, socket.AF_INET6)
         self.assertEqual(expected_socket.type, socket.SOCK_STREAM)
 
-    def test_generate_socket__domain_name(self):
+    def test_generate_tcp_socket__domain_name(self):
         address = Address(
             "Test Localhost", "google.com", 80, AddressTypeCodes.DOMAIN_NAME
         )
         with self.assertRaises(ValueError):
-            generate_socket(address)
+            generate_tcp_socket(address.address_type)
 
 
 if __name__ == "__main__":
