@@ -96,7 +96,7 @@ class TCPRelay(BaseRelay):
         self, src_addr: DetailedAddress, dst_addr: DetailedAddress, data_len: int
     ) -> None:
         """
-        Logs a relay event.
+        Logs the relay of data between the client and the destination.
 
         Args:
             src_addr (DetailedAddress): The source socket information.

@@ -1,10 +1,14 @@
 import socket
 
 from .base import BaseRelay
-from ..models import Address
+from ..models import DetailedAddress, BaseAddress
 from ..logger import get_logger
-from ..request_handlers import UDPRequestHandler
-from ..utils import generate_udp_socket, map_address_enum_to_socket_family
+from ..handlers import UDPHandler
+from ..utils import (
+    generate_udp_socket,
+    map_address_enum_to_socket_family,
+    base_relay_template,
+)
 
 logger = get_logger(__name__)
 
@@ -14,13 +18,13 @@ class UDPRelay(BaseRelay):
     Class responsible for relaying data between a client socket and a remote socket via UDP.
     """
 
-    def __init__(self, client_connection: socket.socket, dst_address: Address):
+    def __init__(self, client_connection: socket.socket, dst_address: DetailedAddress):
         """
         Initializes a new instance of the UDPRelay class.
 
         Args:
             client_connection (socket.socket): The client socket.
-            dst_address (Address): The destination address.
+            dst_address (DetailedAddress): The destination address.
         """
         super().__init__(client_connection, dst_address)
         self.generate_proxy_connection()
@@ -45,7 +49,7 @@ class UDPRelay(BaseRelay):
                 break
 
             # Extract the UDP datagram
-            datagram = UDPRequestHandler.parse_udp_datagram(data)
+            datagram = UDPHandler.parse_udp_datagram(data)
 
             if datagram.frag != 0:
                 # Per RFC 1928, "an implementation that does not support fragmentation MUST drop any datagram whose FRAG field is other than X'00'."
@@ -62,12 +66,36 @@ class UDPRelay(BaseRelay):
                 forward_socket.sendto(
                     datagram.data, (datagram.dst_addr, datagram.dst_port)
                 )
-                logger.debug(
-                    f"(UDP) Data relayed: {addr} -> {datagram.dst_addr}:{datagram.dst_port}, Size: {len(datagram.data)} bytes"
+                self._log_relay(
+                    BaseAddress(addr[0], addr[1]),
+                    BaseAddress(datagram.dst_addr, datagram.dst_port),
+                    len(datagram.data),
                 )
 
                 response, _ = forward_socket.recvfrom(4096)
                 self.proxy_connection.sendto(response, addr)
-                logger.debug(
-                    f"(UDP) Data relayed: {datagram.dst_addr}:{datagram.dst_port} -> {addr}, Size: {len(response)} bytes"
+                self._log_relay(
+                    BaseAddress(datagram.dst_addr, datagram.dst_port),
+                    BaseAddress(addr[0], addr[1]),
+                    len(response),
                 )
+
+    def _log_relay(self, src_addr: BaseAddress, dst_addr: BaseAddress, data_len: int):
+        """
+        Logs the relay of data between the client and the destination.
+
+        Args:
+            src_addr (BaseAddress): The source socket information.
+            dst_addr (BaseAddress): The destination socket information.
+            data_len (int): The length of the data sent.
+        """
+        logger.debug(
+            base_relay_template.substitute(
+                protocol="UDP",
+                src_ip=src_addr.ip,
+                src_port=src_addr.port,
+                dst_ip=dst_addr.ip,
+                dst_port=dst_addr.port,
+                data_size=data_len,
+            )
+        )
