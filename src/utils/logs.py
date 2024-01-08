@@ -3,7 +3,9 @@ Standardized log messages.
 """
 import string
 
-connection_template = string.Template("CONN | $name | $ip:$port | $address_type")
+connection_established_template = string.Template(
+    "CONN | $name | $ip:$port | $address_type"
+)
 connection_closed_template = string.Template(
     "TERM | ($src_domain_name) $src_ip:$src_port <-> ($dst_domain_name) $dst_ip:$dst_port"
 )
