@@ -78,7 +78,7 @@ class TCPRelay(BaseRelay):
                         # Send data loop to other socket
                         sent: int = other_sock.send(data)
                         logger.debug(
-                            f"Data relayed: {sock_info} -> {other_info}, Size: {len(data)} bytes"
+                            f"(TCP) Data relayed: {sock_info} -> {other_info}, Size: {len(data)} bytes"
                         )
                         data = data[sent:]
 
