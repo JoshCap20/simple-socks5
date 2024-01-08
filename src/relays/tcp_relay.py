@@ -3,9 +3,13 @@ import socket
 
 
 from .base import BaseRelay
-from ..models import Address
+from ..models import DetailedAddress
 from ..logger import get_logger
-from ..utils import generate_tcp_socket
+from ..utils import (
+    generate_tcp_socket,
+    detailed_relay_template,
+    connection_closed_template,
+)
 
 logger = get_logger(__name__)
 
@@ -15,13 +19,13 @@ class TCPRelay(BaseRelay):
     Class responsible for relaying data between a client socket and a remote socket via TCP.
     """
 
-    def __init__(self, client_connection: socket.socket, dst_address: Address):
+    def __init__(self, client_connection: socket.socket, dst_address: DetailedAddress):
         """
         Initializes a new instance of the TCPRelay class.
 
         Args:
             connection (socket.socket): The client socket.
-            dst_address (Address): The address to connect to.
+            dst_address (DetailedAddress): The address to connect to.
         """
         super().__init__(client_connection, dst_address)
         self.generate_proxy_connection()
@@ -55,12 +59,12 @@ class TCPRelay(BaseRelay):
                     )
 
                     # Metadata for logging
-                    other_info: Address = (
+                    other_info: DetailedAddress = (
                         self.get_dst_address()
                         if sock is self.client_connection
                         else self.get_client_address()
                     )
-                    sock_info: Address = (
+                    sock_info: DetailedAddress = (
                         self.get_client_address()
                         if sock is self.client_connection
                         else self.get_dst_address()
@@ -71,15 +75,13 @@ class TCPRelay(BaseRelay):
 
                     if not data:
                         # No data received, connection closed
-                        logger.info(f"Connection closed: {sock_info} <-> {other_info}")
+                        self._log_connection_closed()
                         return
 
                     while data:
                         # Send data loop to other socket
                         sent: int = other_sock.send(data)
-                        logger.debug(
-                            f"(TCP) Data relayed: {sock_info} -> {other_info}, Size: {len(data)} bytes"
-                        )
+                        self._log_relay(sock_info, other_info, sent)
                         data = data[sent:]
 
         except BrokenPipeError as e:
@@ -89,3 +91,45 @@ class TCPRelay(BaseRelay):
         finally:
             for sock in [self.client_connection, self.proxy_connection]:
                 sock.close()
+
+    def _log_relay(
+        self, src_addr: DetailedAddress, dst_addr: DetailedAddress, data_len: int
+    ) -> None:
+        """
+        Logs the relay of data between the client and the destination.
+
+        Args:
+            src_addr (DetailedAddress): The source socket information.
+            dst_addr (DetailedAddress): The destination socket information.
+            data_len (int): The length of the data sent.
+        """
+        logger.debug(
+            detailed_relay_template.substitute(
+                protocol="TCP",
+                src_domain_name=src_addr.name,
+                src_ip=src_addr.ip,
+                src_port=src_addr.port,
+                dst_domain_name=dst_addr.name,
+                dst_ip=dst_addr.ip,
+                dst_port=dst_addr.port,
+                data_size=data_len,
+            )
+        )
+
+    def _log_connection_closed(self) -> None:
+        """
+        Logs a connection closed event.
+        """
+        client_address: DetailedAddress = self.get_client_address()
+        dst_address: DetailedAddress = self.get_dst_address()
+
+        logger.info(
+            connection_closed_template.substitute(
+                src_domain_name=client_address.name,
+                src_ip=client_address.ip,
+                src_port=client_address.port,
+                dst_domain_name=dst_address.name,
+                dst_ip=dst_address.ip,
+                dst_port=dst_address.port,
+            )
+        )

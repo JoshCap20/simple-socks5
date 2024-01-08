@@ -2,10 +2,10 @@ import unittest
 from unittest.mock import MagicMock, patch
 import struct
 import socket
-from src.request_handlers.tcp import TCPRequestHandler
+from src.handlers.tcp import TCPHandler
 from src.exceptions import InvalidVersionError, InvalidRequestError
 from src.constants import SOCKS_VERSION, AddressTypeCodes, MethodCodes
-from src.models import Address, Request
+from src.models import DetailedAddress, Request
 
 # Testing Data
 ## Initial Requests
@@ -27,7 +27,7 @@ RESP_LOGIN_FAILURE = b"\x01\x01"
 class TestTCPRequestHandlerIPv4(unittest.TestCase):
     def setUp(self):
         self.connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.handler = TCPRequestHandler(self.connection)
+        self.handler = TCPHandler(self.connection)
 
     def tearDown(self):
         self.connection.close()

@@ -1,17 +1,17 @@
 from socket import socket
 
-from ..models import Address, BindAddress
+from ..models import DetailedAddress, BindAddress
 
 
 class BaseRelay:
     client_connection: socket
     proxy_connection: socket
 
-    client_address: Address
-    dst_address: Address
+    client_address: DetailedAddress
+    dst_address: DetailedAddress
     proxy_address: BindAddress
 
-    def __init__(self, connection: socket, dst_address: Address):
+    def __init__(self, connection: socket, dst_address: DetailedAddress):
         self.client_connection = connection
         self.dst_address = dst_address
         self.set_client_address()
@@ -23,9 +23,9 @@ class BaseRelay:
         """
         Sets the client address from client socket.
         """
-        self.client_address = Address(
-            "Client",
+        self.client_address = DetailedAddress(
             *self.client_connection.getpeername(),
+            name="Client",
             address_type=self.dst_address.address_type,
         )
 
@@ -59,7 +59,7 @@ class BaseRelay:
             raise ValueError("Bind address is None")
         return self.proxy_address.port
 
-    def get_dst_address(self) -> Address:
+    def get_dst_address(self) -> DetailedAddress:
         """
         Returns the destination address.
         """
@@ -77,7 +77,7 @@ class BaseRelay:
         """
         return self.dst_address.port
 
-    def get_client_address(self) -> Address:
+    def get_client_address(self) -> DetailedAddress:
         """
         Returns the client address.
         """

@@ -1,8 +1,8 @@
 import socket
-from socketserver import StreamRequestHandler
+from socketserver import StreamRequestHandler, ThreadingMixIn, TCPServer
 
 from .constants import CommandCodes
-from .request_handlers import TCPRequestHandler
+from .handlers import TCPHandler
 from .relays import TCPRelay, UDPRelay
 from .utils import (
     generate_general_socks_server_failure_reply,
@@ -10,10 +10,10 @@ from .utils import (
     generate_connection_refused_reply,
     generate_host_unreachable_reply,
     generate_succeeded_reply,
+    connection_established_template,
 )
 from .logger import get_logger
-from .models import Request, Address
-from socketserver import ThreadingMixIn, TCPServer
+from .models import Request, DetailedAddress
 
 logger = get_logger(__name__)
 
@@ -35,7 +35,7 @@ class TCPProxyServer(StreamRequestHandler):
     https://docs.python.org/3/library/socketserver.html#socketserver.StreamRequestHandler
     """
 
-    client_address: Address
+    client_address: DetailedAddress
     connection: socket.socket
     server: ThreadingTCPServer
 
@@ -48,7 +48,7 @@ class TCPProxyServer(StreamRequestHandler):
             client_address: Client address returned by BaseServer.get_request().
             server: BaseServer object used for handling the request.
         """
-        request_handler = TCPRequestHandler(self.connection)
+        request_handler = TCPHandler(self.connection)
 
         if not request_handler.handle_request():
             logger.error("Handshake failed")
@@ -57,16 +57,14 @@ class TCPProxyServer(StreamRequestHandler):
 
         dst_request: Request = request_handler.parse_request()
 
-        self.client_address: Address = Address(
-            "Client",
+        self.client_address: DetailedAddress = DetailedAddress(
             *self.connection.getpeername(),
+            name="Client",
             address_type=dst_request.address.address_type,
         )
-        reply: bytes | None = None
+        self._log_connection()
 
-        logger.info(
-            f"Connection Established: {dst_request.address} <-> {self.client_address}"
-        )
+        reply: bytes | None = None
 
         try:
             match dst_request.command:
@@ -104,7 +102,7 @@ class TCPProxyServer(StreamRequestHandler):
                     logger.error(f"Error sending reply: {e}")
             self.server.shutdown_request(self.request)
 
-    def handle_connect(self, dst_address: Address) -> None:
+    def handle_connect(self, dst_address: DetailedAddress) -> None:
         """
         Handles CONNECT command.
         """
@@ -120,7 +118,7 @@ class TCPProxyServer(StreamRequestHandler):
         # Start TCP relay
         tcp_relay.listen_and_relay()
 
-    def handle_udp_associate(self, dst_address: Address) -> None:
+    def handle_udp_associate(self, dst_address: DetailedAddress) -> None:
         """
         Handles UDP ASSOCIATE command.
         """
@@ -136,7 +134,7 @@ class TCPProxyServer(StreamRequestHandler):
         # Start UDP relay
         udp_relay.listen_and_relay()
 
-    def handle_bind(self, address: Address) -> bytes:
+    def handle_bind(self, address: DetailedAddress) -> bytes:
         """
         Handles BIND command.
         """
@@ -148,3 +146,16 @@ class TCPProxyServer(StreamRequestHandler):
         Called after handle() to perform any clean-up actions required.
         """
         self.connection.close()
+
+    def _log_connection(self) -> None:
+        """
+        Logs connection.
+        """
+        logger.info(
+            connection_established_template.substitute(
+                name=self.client_address.name,
+                ip=self.client_address.ip,
+                port=self.client_address.port,
+                address_type=self.client_address.address_type.name,
+            )
+        )

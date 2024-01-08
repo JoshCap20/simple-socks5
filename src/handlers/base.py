@@ -4,13 +4,13 @@ import socket
 from ..constants import SOCKS_VERSION, AddressTypeCodes
 from ..exceptions import InvalidRequestError, InvalidVersionError
 from ..logger import get_logger
-from ..models import Address, Request
+from ..models import DetailedAddress, Request
 from ..utils import map_address_int_to_enum
 
 logger = get_logger(__name__)
 
 
-class BaseRequestHandler:
+class BaseHandler:
     connection: socket.socket
 
     def __init__(self, connection: socket.socket):
@@ -64,7 +64,7 @@ class BaseRequestHandler:
             if version != SOCKS_VERSION:
                 raise InvalidVersionError(version)
 
-            address: Address = self._parse_address(address_type)
+            address: DetailedAddress = self._parse_address(address_type)
 
             return Request(version=version, command=cmd, address=address)
 
@@ -72,7 +72,7 @@ class BaseRequestHandler:
             logger.exception(f"Socket error during request parsing: {e}")
             raise socket.error(e)
 
-    def _parse_address(self, address_type: int) -> Address:
+    def _parse_address(self, address_type: int) -> DetailedAddress:
         try:
             match address_type:
                 case AddressTypeCodes.IPv4.value:
@@ -80,7 +80,7 @@ class BaseRequestHandler:
                     domain_name: str = self._gethostbyaddr(address)
                 case AddressTypeCodes.DOMAIN_NAME.value:
                     domain_length = self.connection.recv(1)[0]
-                    domain_name = self.connection.recv(domain_length)
+                    domain_name = self.connection.recv(domain_length).decode()  # type: ignore
                     address: str = self._gethostbyname(domain_name)
                     address_type = AddressTypeCodes.IPv4.value
                 case AddressTypeCodes.IPv6.value:
@@ -92,8 +92,8 @@ class BaseRequestHandler:
                     raise InvalidRequestError(address_type)
 
             port: int = struct.unpack("!H", self.connection.recv(2))[0]
-            return Address(
-                name=domain_name,
+            return DetailedAddress(
+                name=str(domain_name),
                 ip=address,
                 port=port,
                 address_type=map_address_int_to_enum(address_type),

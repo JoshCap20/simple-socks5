@@ -1,7 +1,6 @@
-import os
 import logging
 
-verbosity = int(os.environ.get("LOGGING_LEVEL", 1))
+from .config import ProxyConfiguration
 
 
 class LogColors:
@@ -29,14 +28,30 @@ class ColorFormatter(logging.Formatter):
         return message
 
 
+_loggers = {}
+
+
 def get_logger(name: str) -> logging.Logger:
-    logger = logging.getLogger(name)
+    if name not in _loggers:
+        logger = logging.getLogger(name)
+
+        if ProxyConfiguration.is_initialized():
+            configure_logger(logger)
+        else:
+            logger.addHandler(logging.NullHandler())
+
+        _loggers[name] = logger
+
+    return _loggers[name]
+
+
+def configure_logger(logger: logging.Logger) -> None:
     logger.setLevel(logging.DEBUG)
 
-    if verbosity != 0:
+    if logging_level := ProxyConfiguration.get_logging_level != 0:
         # Console Handler for logging
         c_handler = logging.StreamHandler()
-        c_handler.setLevel(verbosity * 10)
+        c_handler.setLevel(logging_level)
         c_format = ColorFormatter("[%(asctime)s] - [%(levelname)s] - %(message)s")
         c_handler.setFormatter(c_format)
 
@@ -53,4 +68,7 @@ def get_logger(name: str) -> logging.Logger:
     else:
         logger.addHandler(logging.NullHandler())
 
-    return logger
+
+def update_loggers() -> None:
+    for logger in _loggers.values():
+        configure_logger(logger)
