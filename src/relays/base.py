@@ -1,8 +1,6 @@
-from collections import namedtuple
 from socket import socket
 
 from ..models import Address, BindAddress
-from ..utils import generate_address_from_socket, generate_tcp_socket
 
 
 class BaseRelay:
