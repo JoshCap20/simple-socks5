@@ -62,7 +62,7 @@ class TCPProxyServer(StreamRequestHandler):
             name="Client",
             address_type=dst_request.address.address_type,
         )
-        self._log_connection()
+        self._log_connection(dst_request.address)
 
         reply: bytes | None = None
 
@@ -147,15 +147,17 @@ class TCPProxyServer(StreamRequestHandler):
         """
         self.connection.close()
 
-    def _log_connection(self) -> None:
+    def _log_connection(self, dst_address: DetailedAddress) -> None:
         """
         Logs connection.
         """
         logger.info(
             connection_established_template.substitute(
-                name=self.client_address.name,
-                ip=self.client_address.ip,
-                port=self.client_address.port,
-                address_type=self.client_address.address_type.name,
+                src_domain_name=self.client_address.name,
+                src_ip=self.client_address.ip,
+                src_port=self.client_address.port,
+                dst_domain_name=dst_address.name,
+                dst_ip=dst_address.ip,
+                dst_port=dst_address.port,
             )
         )
