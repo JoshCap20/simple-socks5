@@ -10,7 +10,7 @@ class ProxyConfiguration:
     _host: str
     _port: int
     _logging_level: str
-    _use_tor: bool = False
+    _use_tor: bool
 
     _logging_level_str_to_level = {
         "disabled": logging.NOTSET,
@@ -22,14 +22,13 @@ class ProxyConfiguration:
     }
 
     @classmethod
-    def initialize(cls, host: str, port: int, logging_level: int) -> None:
+    def initialize(
+        cls, host: str, port: int, logging_level: int, use_tor: bool = False
+    ) -> None:
         cls._host = host
         cls._port = port
         cls._logging_level = logging_level
-
-    @classmethod
-    def enable_tor(cls) -> None:
-        cls._use_tor = True
+        cls._use_tor = use_tor
 
     @classmethod
     def is_tor_enabled(cls) -> bool:

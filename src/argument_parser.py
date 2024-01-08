@@ -1,6 +1,5 @@
 import argparse
 
-# Consider placing version information in a separate module or file
 __version__ = "0.2.1"
 
 
@@ -12,7 +11,7 @@ def parse_arguments() -> argparse.Namespace:
     """
     parser = argparse.ArgumentParser(
         description="SOCKS5 Proxy Server. A flexible and configurable proxy server.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,  # Shows default values
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
     # Server Configuration
@@ -39,14 +38,14 @@ def parse_arguments() -> argparse.Namespace:
         help="Set the logging level.",
     )
 
-    # Tor Configuration
-    tor_group = parser.add_argument_group("Tor Configuration")
-    tor_group.add_argument(
-        "-UT",
-        "--use-tor",
-        action="store_true",
-        help="Use Tor to make requests to the destination server.",
-    )
+    # # Tor Configuration
+    # tor_group = parser.add_argument_group("Tor Configuration")
+    # tor_group.add_argument(
+    #     "-UT",
+    #     "--use-tor",
+    #     action="store_true",
+    #     help="Use Tor to make requests to the destination server.",
+    # )
 
     # Version Information
     parser.add_argument(
