@@ -1,8 +1,10 @@
-import os
 import argparse
 
 
-def parse_arguments():
+def parse_arguments() -> argparse.Namespace:
+    """
+    Parses command line arguments.
+    """
     parser = argparse.ArgumentParser(description="SOCKS5 Proxy Server")
     parser.add_argument(
         "-H",
@@ -31,10 +33,5 @@ def parse_arguments():
         ),
     )
     args = parser.parse_args()
-
-    if args.logging_level is not None:
-        os.environ["LOGGING_LEVEL"] = str(args.logging_level)
-    else:
-        os.environ["DISABLE_LOGGING"] = "1"
 
     return args
