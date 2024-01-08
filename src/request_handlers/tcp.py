@@ -81,7 +81,11 @@ class TCPRequestHandler(BaseRequestHandler):
                     return True
                 case MethodCodes.USERNAME_PASSWORD:
                     return self._handle_username_password_auth()
+                case MethodCodes.GSSAPI:
+                    # Not implemented yet
+                    return self._handle_gssapi_auth()
                 case _:
+                    logger.warn("No acceptable authentication methods")
                     return False
 
         except socket.error as e:
@@ -110,6 +114,7 @@ class TCPRequestHandler(BaseRequestHandler):
 
         if MethodCodes.USERNAME_PASSWORD.value in mutual_method:
             return MethodCodes.USERNAME_PASSWORD
+        # TODO: Implement GSS-API authentication
         elif MethodCodes.NO_AUTHENTICATION_REQUIRED.value in mutual_method:
             return MethodCodes.NO_AUTHENTICATION_REQUIRED
         else:
@@ -192,3 +197,10 @@ class TCPRequestHandler(BaseRequestHandler):
                 f"Socket error during username/password authentication: {e}"
             )
             return False
+
+    def _handle_gssapi_auth(self) -> bool:
+        """
+        GSS-API method implementation per RFC 1961.
+        """
+        logger.warn("GSS-API authentication method not implemented")
+        return False
