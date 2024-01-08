@@ -4,6 +4,8 @@ import struct
 from .base import BaseRequestHandler
 from ..logger import get_logger
 from ..exceptions import InvalidRequestError
+from ..models import UDPDatagram
+from ..utils import map_address_int_to_enum
 
 logger = get_logger(__name__)
 
@@ -20,9 +22,8 @@ class UDPRequestHandler(BaseRequestHandler):
         """
         self.connection = connection
 
-    def handle_request(
-        self,
-    ) -> tuple[bytes, tuple[str, int], int, int, str, int, bytes]:
+    @staticmethod
+    def parse_udp_datagram(data: bytes) -> UDPDatagram:
         """
         Procedure for UDP-based clients per RFC 1928.
 
@@ -42,27 +43,32 @@ class UDPRequestHandler(BaseRequestHandler):
         o  DST.PORT - desired destination port
         o  DATA - user data
         """
-        data, addr = self.connection.recvfrom(4096)
 
         # Parse the SOCKS UDP request header
         rsv, frag, atyp = struct.unpack("!HBB", data[:4])
 
         if atyp == 1:  # IPv4
             dst_addr = socket.inet_ntoa(data[4:8])
-            (dst_port,) = struct.unpack("!H", data[8:10])
+            dst_port = struct.unpack("!H", data[8:10])[0]
             user_data = data[10:]
         elif atyp == 3:  # Domain name
             domain_length = data[4]
             dst_addr = data[5 : 5 + domain_length].decode()
-            (dst_port,) = struct.unpack(
-                "!H", data[5 + domain_length : 5 + domain_length + 2]
-            )
-            user_data = data[5 + domain_length + 2 :]
+            dst_port = struct.unpack("!H", data[5 + domain_length : 7 + domain_length])[
+                0
+            ]
+            user_data = data[7 + domain_length :]
         elif atyp == 4:  # IPv6
             dst_addr = socket.inet_ntop(socket.AF_INET6, data[4:20])
-            (dst_port,) = struct.unpack("!H", data[20:22])
+            dst_port = struct.unpack("!H", data[20:22])[0]
             user_data = data[22:]
         else:
             raise InvalidRequestError(atyp)
 
-        return data, addr, frag, atyp, dst_addr, dst_port, user_data
+        return UDPDatagram(
+            frag=frag,
+            address_type=map_address_int_to_enum(atyp),
+            dst_addr=dst_addr,
+            dst_port=dst_port,
+            data=user_data,
+        )
