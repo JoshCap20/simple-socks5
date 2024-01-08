@@ -1,6 +1,6 @@
 import socket
 import unittest
-from src.models import Address
+from src.models import DetailedAddress
 from src.utils import (
     generate_connection_method_response,
     generate_general_socks_server_failure_reply,
@@ -11,7 +11,7 @@ from src.utils import (
     generate_connection_not_allowed_by_ruleset_reply,
     generate_ttl_expired_reply,
     generate_command_not_supported_reply,
-    translate_address_to_bytes,
+    map_address_to_bytes,
     map_address_int_to_enum,
     map_address_enum_to_socket_family,
     generate_succeeded_reply,
@@ -141,25 +141,25 @@ class TestAddressToBytesUtils(unittest.TestCase):
     def test_translate_address_to_bytes__ipv4_1(self):
         address_type = AddressTypeCodes.IPv4
         ip = "127.127.64.5"
-        expected_bytes = translate_address_to_bytes(address_type, ip)
+        expected_bytes = map_address_to_bytes(address_type, ip)
         self.assertEqual(expected_bytes, b"\x7f\x7f\x40\x05")
 
     def test_translate_address_to_bytes__ipv4_2(self):
         address_type = AddressTypeCodes.IPv4
         ip = "208.54.62.80"
-        expected_bytes = translate_address_to_bytes(address_type, ip)
+        expected_bytes = map_address_to_bytes(address_type, ip)
         self.assertEqual(expected_bytes, b"\xd0\x36\x3e\x50")
 
     def test_translate_address_to_bytes__ipv4_3(self):
         address_type = AddressTypeCodes.IPv4
         ip = "17.248.230.65"
-        expected_bytes = translate_address_to_bytes(address_type, ip)
+        expected_bytes = map_address_to_bytes(address_type, ip)
         self.assertEqual(expected_bytes, b"\x11\xf8\xe6\x41")
 
     def test_translate_address_to_bytes__ipv6_1(self):
         address_type = AddressTypeCodes.IPv6
         ip = "2001:0db8:85a3:0000:0000:8a2e:0370:7334"
-        expected_bytes = translate_address_to_bytes(address_type, ip)
+        expected_bytes = map_address_to_bytes(address_type, ip)
         self.assertEqual(
             expected_bytes,
             b" \x01\r\xb8\x85\xa3\x00\x00\x00\x00\x8a.\x03ps4",
@@ -168,7 +168,7 @@ class TestAddressToBytesUtils(unittest.TestCase):
     def test_translate_address_to_bytes__ipv6_2(self):
         address_type = AddressTypeCodes.IPv6
         ip = "2001:0db8:85a3:0000:0000:8a2e:0370:7334"
-        expected_bytes = translate_address_to_bytes(address_type, ip)
+        expected_bytes = map_address_to_bytes(address_type, ip)
         self.assertEqual(
             expected_bytes,
             b" \x01\r\xb8\x85\xa3\x00\x00\x00\x00\x8a.\x03ps4",
@@ -177,7 +177,7 @@ class TestAddressToBytesUtils(unittest.TestCase):
     def test_translate_address_to_bytes__ipv6_3(self):
         address_type = AddressTypeCodes.IPv6
         ip = "2001:0db8:85a3:0000:0000:8a2e:0370:7334"
-        expected_bytes = translate_address_to_bytes(address_type, ip)
+        expected_bytes = map_address_to_bytes(address_type, ip)
         self.assertEqual(
             expected_bytes,
             b" \x01\r\xb8\x85\xa3\x00\x00\x00\x00\x8a.\x03ps4",
@@ -187,7 +187,7 @@ class TestAddressToBytesUtils(unittest.TestCase):
         address_type = AddressTypeCodes.DOMAIN_NAME
         ip = "google.com"
         with self.assertRaises(ValueError):
-            translate_address_to_bytes(address_type, ip)
+            map_address_to_bytes(address_type, ip)
 
 
 class TestConnectionMethodResponseUtils(unittest.TestCase):
@@ -278,18 +278,23 @@ class TestSuccessUtils(unittest.TestCase):
 
 class TestGenerateSocketUtils(unittest.TestCase):
     def test_generate_tcp_socket__ipv4(self):
-        address = Address("Test Localhost", "127.0.0.1", 80, AddressTypeCodes.IPv4)
+        address = DetailedAddress(
+            name="Test Localhost",
+            ip="127.0.0.1",
+            port=80,
+            address_type=AddressTypeCodes.IPv4,
+        )
         expected_socket = generate_tcp_socket(address.address_type)
         self.assertIsInstance(expected_socket, socket.socket)
         self.assertEqual(expected_socket.family, socket.AF_INET)
         self.assertEqual(expected_socket.type, socket.SOCK_STREAM)
 
     def test_generate_tcp_socket__ipv6(self):
-        address = Address(
-            "Test Random IPv6 Address",
-            "2606:2800:220:1:248:1893:25c8:1946",
-            80,
-            AddressTypeCodes.IPv6,
+        address = DetailedAddress(
+            name="Test Random IPv6 DetailedAddress",
+            ip="2606:2800:220:1:248:1893:25c8:1946",
+            port=80,
+            address_type=AddressTypeCodes.IPv6,
         )
         expected_socket = generate_tcp_socket(address.address_type)
         self.assertIsInstance(expected_socket, socket.socket)
@@ -297,8 +302,11 @@ class TestGenerateSocketUtils(unittest.TestCase):
         self.assertEqual(expected_socket.type, socket.SOCK_STREAM)
 
     def test_generate_tcp_socket__domain_name(self):
-        address = Address(
-            "Test Localhost", "google.com", 80, AddressTypeCodes.DOMAIN_NAME
+        address = DetailedAddress(
+            name="Test Localhost",
+            ip="google.com",
+            port=80,
+            address_type=AddressTypeCodes.DOMAIN_NAME,
         )
         with self.assertRaises(ValueError):
             generate_tcp_socket(address.address_type)

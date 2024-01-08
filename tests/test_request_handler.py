@@ -5,7 +5,7 @@ import socket
 from src.request_handlers.tcp import TCPRequestHandler
 from src.exceptions import InvalidVersionError, InvalidRequestError
 from src.constants import SOCKS_VERSION, AddressTypeCodes, MethodCodes
-from src.models import Address, Request
+from src.models import DetailedAddress, Request
 
 # Testing Data
 ## Initial Requests

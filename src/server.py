@@ -10,9 +10,10 @@ from .utils import (
     generate_connection_refused_reply,
     generate_host_unreachable_reply,
     generate_succeeded_reply,
+    get_connection_log_message,
 )
 from .logger import get_logger
-from .models import Request, Address
+from .models import Request, DetailedAddress
 from socketserver import ThreadingMixIn, TCPServer
 
 logger = get_logger(__name__)
@@ -35,7 +36,7 @@ class TCPProxyServer(StreamRequestHandler):
     https://docs.python.org/3/library/socketserver.html#socketserver.StreamRequestHandler
     """
 
-    client_address: Address
+    client_address: DetailedAddress
     connection: socket.socket
     server: ThreadingTCPServer
 
@@ -57,16 +58,14 @@ class TCPProxyServer(StreamRequestHandler):
 
         dst_request: Request = request_handler.parse_request()
 
-        self.client_address: Address = Address(
-            "Client",
+        self.client_address: DetailedAddress = DetailedAddress(
             *self.connection.getpeername(),
+            name="Client",
             address_type=dst_request.address.address_type,
         )
         reply: bytes | None = None
 
-        logger.info(
-            f"Connection Established: {dst_request.address} <-> {self.client_address}"
-        )
+        logger.info(get_connection_log_message(self.client_address))
 
         try:
             match dst_request.command:
@@ -104,7 +103,7 @@ class TCPProxyServer(StreamRequestHandler):
                     logger.error(f"Error sending reply: {e}")
             self.server.shutdown_request(self.request)
 
-    def handle_connect(self, dst_address: Address) -> None:
+    def handle_connect(self, dst_address: DetailedAddress) -> None:
         """
         Handles CONNECT command.
         """
@@ -120,7 +119,7 @@ class TCPProxyServer(StreamRequestHandler):
         # Start TCP relay
         tcp_relay.listen_and_relay()
 
-    def handle_udp_associate(self, dst_address: Address) -> None:
+    def handle_udp_associate(self, dst_address: DetailedAddress) -> None:
         """
         Handles UDP ASSOCIATE command.
         """
@@ -136,7 +135,7 @@ class TCPProxyServer(StreamRequestHandler):
         # Start UDP relay
         udp_relay.listen_and_relay()
 
-    def handle_bind(self, address: Address) -> bytes:
+    def handle_bind(self, address: DetailedAddress) -> bytes:
         """
         Handles BIND command.
         """
