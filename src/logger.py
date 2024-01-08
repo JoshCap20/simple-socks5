@@ -46,9 +46,11 @@ def get_logger(name: str) -> logging.Logger:
 
 
 def configure_logger(logger: logging.Logger) -> None:
+    logging_level = ProxyConfiguration.get_logging_level()
+
     logger.setLevel(logging.DEBUG)
 
-    if logging_level := ProxyConfiguration.get_logging_level != 0:
+    if logging_level != logging.NOTSET:
         # Console Handler for logging
         c_handler = logging.StreamHandler()
         c_handler.setLevel(logging_level)

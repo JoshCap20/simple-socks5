@@ -1,49 +1,60 @@
 """
 This file contains the configuration for the proxy server set at runtime.
 """
+import logging
+
 from .models import BaseAddress
 
 
 class ProxyConfiguration:
     _host: str
     _port: int
-    _logging_level: int
+    _logging_level: str
     _use_tor: bool = False
+
+    _logging_level_str_to_level = {
+        "disabled": logging.NOTSET,
+        "debug": logging.DEBUG,
+        "info": logging.INFO,
+        "warning": logging.WARNING,
+        "error": logging.ERROR,
+        "critical": logging.CRITICAL,
+    }
 
     @classmethod
     def initialize(cls, host: str, port: int, logging_level: int) -> None:
-        ProxyConfiguration._host = host
-        ProxyConfiguration._port = port
-        ProxyConfiguration._logging_level = logging_level
+        cls._host = host
+        cls._port = port
+        cls._logging_level = logging_level
 
     @classmethod
     def enable_tor(cls) -> None:
-        ProxyConfiguration._use_tor = True
+        cls._use_tor = True
 
     @classmethod
     def is_tor_enabled(cls) -> bool:
-        return ProxyConfiguration._use_tor
+        return cls._use_tor
 
     @classmethod
     def is_initialized(cls) -> bool:
         return (
-            hasattr(ProxyConfiguration, "host")
-            and hasattr(ProxyConfiguration, "port")
-            and hasattr(ProxyConfiguration, "logging_level")
+            hasattr(cls, "host")
+            and hasattr(cls, "port")
+            and hasattr(cls, "logging_level")
         )
 
     @classmethod
-    def get_logging_level(cls) -> int:
-        return ProxyConfiguration._logging_level * 10
+    def get_logging_level(cls):
+        return cls._logging_level_str_to_level.get(cls._logging_level, logging.NOTSET)
 
     @classmethod
     def get_host(cls) -> str:
-        return ProxyConfiguration._host
+        return cls._host
 
     @classmethod
     def get_port(cls) -> int:
-        return ProxyConfiguration._port
+        return cls._port
 
     @classmethod
     def get_address(cls) -> BaseAddress:
-        return BaseAddress(ProxyConfiguration._host, ProxyConfiguration._port)
+        return BaseAddress(cls._host, cls._port)
