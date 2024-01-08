@@ -13,7 +13,7 @@ from src.utils import (
     generate_command_not_supported_reply,
     translate_address_to_bytes,
     map_address_int_to_enum,
-    map_address_type_to_socket_family,
+    map_address_enum_to_socket_family,
     generate_succeeded_reply,
     generate_tcp_socket,
 )
@@ -230,18 +230,18 @@ class TestMapAddressTypeUtils(unittest.TestCase):
 
     def test_map_address_type_to_socket_family__ipv4(self):
         address_type = AddressTypeCodes.IPv4
-        expected_family = map_address_type_to_socket_family(address_type)
+        expected_family = map_address_enum_to_socket_family(address_type)
         self.assertEqual(expected_family, socket.AF_INET)
 
     def test_map_address_type_to_socket_family__ipv6(self):
         address_type = AddressTypeCodes.IPv6
-        expected_family = map_address_type_to_socket_family(address_type)
+        expected_family = map_address_enum_to_socket_family(address_type)
         self.assertEqual(expected_family, socket.AF_INET6)
 
     def test_map_address_type_to_socket_family__domain_name(self):
         address_type = AddressTypeCodes.DOMAIN_NAME
         with self.assertRaises(ValueError):
-            map_address_type_to_socket_family(address_type)
+            map_address_enum_to_socket_family(address_type)
 
 
 class TestSuccessUtils(unittest.TestCase):

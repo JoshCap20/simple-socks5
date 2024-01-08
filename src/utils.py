@@ -120,7 +120,7 @@ def map_address_family_to_enum(address_family: int) -> AddressTypeCodes:
         raise ValueError("Unknown address family")
 
 
-def map_address_type_to_socket_family(address_type: AddressTypeCodes) -> int:
+def map_address_enum_to_socket_family(address_type: AddressTypeCodes) -> int:
     if address_type == AddressTypeCodes.IPv4:
         return socket.AF_INET
     elif address_type == AddressTypeCodes.IPv6:
@@ -140,13 +140,13 @@ def map_address_int_to_socket_family(address_type: int) -> int:
 
 def generate_tcp_socket(address_type: AddressTypeCodes) -> socket.socket:
     return socket.socket(
-        map_address_type_to_socket_family(address_type), socket.SOCK_STREAM
+        map_address_enum_to_socket_family(address_type), socket.SOCK_STREAM
     )
 
 
 def generate_udp_socket(address_type: AddressTypeCodes) -> socket.socket:
     return socket.socket(
-        map_address_type_to_socket_family(address_type), socket.SOCK_DGRAM
+        map_address_enum_to_socket_family(address_type), socket.SOCK_DGRAM
     )
 
 
