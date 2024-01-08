@@ -2,7 +2,7 @@ import socket
 from socketserver import StreamRequestHandler
 
 from .constants import CommandCodes
-from .request_handlers import TCPRequestHandler
+from .handlers import TCPHandler
 from .relays import TCPRelay, UDPRelay
 from .utils import (
     generate_general_socks_server_failure_reply,
@@ -49,7 +49,7 @@ class TCPProxyServer(StreamRequestHandler):
             client_address: Client address returned by BaseServer.get_request().
             server: BaseServer object used for handling the request.
         """
-        request_handler = TCPRequestHandler(self.connection)
+        request_handler = TCPHandler(self.connection)
 
         if not request_handler.handle_request():
             logger.error("Handshake failed")
@@ -64,9 +64,9 @@ class TCPProxyServer(StreamRequestHandler):
             address_type=dst_request.address.address_type,
         )
         self._log_connection()
-        
+
         reply: bytes | None = None
-        
+
         try:
             match dst_request.command:
                 case CommandCodes.CONNECT.value:
@@ -154,7 +154,9 @@ class TCPProxyServer(StreamRequestHandler):
         """
         logger.info(
             connection_established_template.substitute(
-                client_ip=self.client_address.ip,
-                client_port=self.client_address.port,
+                name=self.client_address.name,
+                ip=self.client_address.ip,
+                port=self.client_address.port,
+                address_type=self.client_address.address_type.name,
             )
         )
