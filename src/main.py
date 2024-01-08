@@ -7,6 +7,8 @@ from .server import (
 from .logger import get_logger, update_loggers
 from .config import ProxyConfiguration
 
+logger = get_logger(__name__)
+
 
 def main(args: Namespace):
     """
@@ -18,12 +20,10 @@ def main(args: Namespace):
 
     update_loggers()
 
-    logger = get_logger(__name__)
-
     with ThreadingTCPServer(
         (ProxyConfiguration.get_host(), ProxyConfiguration.get_port()), TCPProxyServer
     ) as tcp_server:
-        logger.info(f"Server started at {tcp_server.server_address}")
+        logger.info(f"Server started on {ProxyConfiguration.get_address()}")
 
         try:
             tcp_server.serve_forever()
