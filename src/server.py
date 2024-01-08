@@ -10,7 +10,7 @@ from .utils import (
     generate_connection_refused_reply,
     generate_host_unreachable_reply,
     generate_succeeded_reply,
-    get_connection_log_message,
+    connection_established_template,
 )
 from .logger import get_logger
 from .models import Request, DetailedAddress
@@ -63,10 +63,10 @@ class TCPProxyServer(StreamRequestHandler):
             name="Client",
             address_type=dst_request.address.address_type,
         )
+        self._log_connection()
+        
         reply: bytes | None = None
-
-        logger.info(get_connection_log_message(self.client_address))
-
+        
         try:
             match dst_request.command:
                 case CommandCodes.CONNECT.value:
@@ -147,3 +147,14 @@ class TCPProxyServer(StreamRequestHandler):
         Called after handle() to perform any clean-up actions required.
         """
         self.connection.close()
+
+    def _log_connection(self) -> None:
+        """
+        Logs connection.
+        """
+        logger.info(
+            connection_established_template.substitute(
+                client_ip=self.client_address.ip,
+                client_port=self.client_address.port,
+            )
+        )
