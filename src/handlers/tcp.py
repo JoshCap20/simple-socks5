@@ -1,7 +1,7 @@
 import struct
 import socket
 
-from .base import BaseRequestHandler
+from .base import BaseHandler
 from ..constants import SOCKS_VERSION, MethodCodes, USERNAME, PASSWORD
 from ..exceptions import InvalidVersionError
 from ..logger import get_logger
@@ -10,7 +10,7 @@ from ..utils import generate_connection_method_response
 logger = get_logger(__name__)
 
 
-class TCPRequestHandler(BaseRequestHandler):
+class TCPHandler(BaseHandler):
     connection: socket.socket
 
     def __init__(self, connection: socket.socket):

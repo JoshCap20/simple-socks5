@@ -10,7 +10,7 @@ from ..utils import map_address_int_to_enum
 logger = get_logger(__name__)
 
 
-class BaseRequestHandler:
+class BaseHandler:
     connection: socket.socket
 
     def __init__(self, connection: socket.socket):
@@ -80,7 +80,7 @@ class BaseRequestHandler:
                     domain_name: str = self._gethostbyaddr(address)
                 case AddressTypeCodes.DOMAIN_NAME.value:
                     domain_length = self.connection.recv(1)[0]
-                    domain_name = self.connection.recv(domain_length)  # type: ignore
+                    domain_name = self.connection.recv(domain_length).decode()  # type: ignore
                     address: str = self._gethostbyname(domain_name)
                     address_type = AddressTypeCodes.IPv4.value
                 case AddressTypeCodes.IPv6.value:
@@ -93,7 +93,7 @@ class BaseRequestHandler:
 
             port: int = struct.unpack("!H", self.connection.recv(2))[0]
             return DetailedAddress(
-                name=domain_name,
+                name=str(domain_name),
                 ip=address,
                 port=port,
                 address_type=map_address_int_to_enum(address_type),

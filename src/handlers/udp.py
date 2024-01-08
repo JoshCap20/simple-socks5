@@ -1,7 +1,7 @@
 import socket
 import struct
 
-from .base import BaseRequestHandler
+from .base import BaseHandler
 from ..logger import get_logger
 from ..exceptions import InvalidRequestError
 from ..models import UDPDatagram
@@ -10,7 +10,7 @@ from ..utils import map_address_int_to_enum
 logger = get_logger(__name__)
 
 
-class UDPRequestHandler(BaseRequestHandler):
+class UDPHandler(BaseHandler):
     connection: socket.socket
 
     def __init__(self, connection: socket.socket):
