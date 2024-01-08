@@ -10,7 +10,6 @@ from .utils import (
     generate_connection_refused_reply,
     generate_host_unreachable_reply,
     generate_succeeded_reply,
-    generate_address_from_socket,
 )
 from .logger import get_logger
 from .models import Request, Address
