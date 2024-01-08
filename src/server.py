@@ -1,5 +1,5 @@
 import socket
-from socketserver import StreamRequestHandler
+from socketserver import StreamRequestHandler, ThreadingMixIn, TCPServer
 
 from .constants import CommandCodes
 from .handlers import TCPHandler
@@ -14,7 +14,6 @@ from .utils import (
 )
 from .logger import get_logger
 from .models import Request, DetailedAddress
-from socketserver import ThreadingMixIn, TCPServer
 
 logger = get_logger(__name__)
 
