@@ -25,7 +25,11 @@ class BaseRelay:
         """
         Sets the client address from client socket.
         """
-        self.client_address = generate_address_from_socket(self.client_connection)
+        self.client_address = Address(
+            "Client",
+            *self.client_connection.getpeername(),
+            address_type=self.dst_address.address_type,
+        )
 
     def set_proxy_address(self) -> None:
         """

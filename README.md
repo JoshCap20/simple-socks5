@@ -28,7 +28,7 @@ python3 app.py [--host HOST | -H HOST] [--port PORT | -P PORT] [--logging-level 
 - Reply Handling: Generates replies to the SOCKS5 requests based on different scenarios (success, general SOCKS server failure, connection refused, etc.).
 #### Not Covered Aspects
 - BIND Command: Although the BIND command is recognized, it's not supported in the current implementation.
-- Fragmentation in UDP: As the UDP support is not implemented, the handling of fragmentation in UDP datagrams is also not covered.
+- Fragmentation in UDP: The current implementation does not support fragmentation in UDP.
 - GSSAPI Authentication: The GSSAPI authentication method (RFC 1961) is not implemented.
 #### Security Considerations
 - Data Encryption: The current implementation does not include data encryption for the transmission of data through the proxy. Data, including username and password for authentication, is transmitted in cleartext.

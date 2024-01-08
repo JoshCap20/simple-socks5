@@ -24,8 +24,9 @@ def main():
             tcp_server.serve_forever()
         except KeyboardInterrupt:
             logger.info("Server shutting down...")
-            tcp_server.shutdown()
         finally:
+            tcp_server.server_close()
+            tcp_server.shutdown()
             logger.info("Server terminated.")
 
 
