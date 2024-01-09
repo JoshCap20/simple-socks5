@@ -7,17 +7,20 @@ This is a simple SOCKS Protocol Version 5 server written in Python. It is based 
 - **Performance Optimized**: Efficient handling of large data transfers.
 - **Protocol Compliance**: Fully compliant with RFC1928 and RFC1929 for basic functionalities.
 
+### Docker Image
+A Docker image is available on [Docker Hub](https://hub.docker.com/r/jcaponigro20/simple-socks5).
+
 ### Requirements
 - Python 3.10 or above
 - Only standard Python libraries are used. No additional dependencies are required.
 
 ### Usage
 ```bash
-python3 app.py [--host HOST | -H HOST] [--port PORT | -P PORT] [--logging-level 0-6 | -L 0-6]
+python3 app.py [--host HOST | -H HOST] [--port PORT | -P PORT] [--logging-level LEVEL | -L LEVEL]
 ```
 - `--host HOST` or `-H HOST`: The host address to bind to. Default is `localhost`. Use `0.0.0.0` to bind to all available interfaces.
 - `--port PORT` or `-P PORT`: The port number to bind to. Default is `9999`.
-- `--logging-level 0-6` or `-L 0-6`: Set logging level where 1 is debug, 5 is critical, and 0 is disabled.
+- `--logging-level LEVEL` or `-L LEVEL`: Set the logging level for the application. Default is `debug`. Choices: ["disabled", "debug", "info", "warning", "error", "critical"]
 
 ### RFC 1928 & RFC 1929 Compliance
 #### Covered Aspects
