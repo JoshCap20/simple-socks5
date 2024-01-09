@@ -9,4 +9,4 @@ ENV PYTHONPATH "${PYTHONPATH}:/app/src"
 
 # Run on open
 EXPOSE 1080
-CMD ["python", "./app.py", "--host", "0.0.0.0", "--port", "1080", "-L", "0"]
+CMD ["python", "./app.py", "--host", "0.0.0.0", "--port", "1080", "--logging-level", "debug"]
