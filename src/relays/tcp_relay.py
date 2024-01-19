@@ -70,13 +70,10 @@ class TCPRelay(BaseRelay):
                         else self.get_dst_address()
                     )
 
-                    # Receive data from socket
-                    data: bytes = sock.recv(4096)
-
+                    # Handle incoming data
+                    data: bytes = self._recv_data(sock)
                     if not data:
-                        # No data received, connection closed
-                        self._log_connection_closed()
-                        return
+                        break
 
                     while data:
                         # Send data loop to other socket
@@ -88,9 +85,10 @@ class TCPRelay(BaseRelay):
             logger.exception(f"Broken Pipe: {e}")
         except ConnectionResetError as e:
             logger.exception(f"Connection Reset: {e}")
+        except Exception as e:
+            logger.exception(f"Unknown Exception: {e}")
         finally:
-            for sock in [self.client_connection, self.proxy_connection]:
-                sock.close()
+            self._cleanup()
 
     def _log_relay(
         self, src_addr: DetailedAddress, dst_addr: DetailedAddress, data_len: int
@@ -133,3 +131,22 @@ class TCPRelay(BaseRelay):
                 dst_port=dst_address.port,
             )
         )
+
+    def _send_data(self, sock, data):
+        try:
+            return sock.send(data)
+        except socket.error as e:
+            logger.exception(f"Error sending data: {e}")
+            return 0
+
+    def _recv_data(self, sock):
+        try:
+            return sock.recv(4096)
+        except socket.error as e:
+            logger.exception(f"Error receiving data: {e}")
+            return None
+
+    def _cleanup(self):
+        for sock in [self.client_connection, self.proxy_connection]:
+            sock.close()
+            self._log_connection_closed()
