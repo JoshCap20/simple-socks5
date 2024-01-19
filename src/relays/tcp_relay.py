@@ -1,6 +1,6 @@
 import select
 import socket
-
+import selectors
 
 from .base import BaseRelay
 from ..models import DetailedAddress
@@ -28,15 +28,23 @@ class TCPRelay(BaseRelay):
             dst_address (DetailedAddress): The address to connect to.
         """
         super().__init__(client_connection, dst_address)
+        self.selector = selectors.DefaultSelector()
         self.generate_proxy_connection()
 
     def generate_proxy_connection(self) -> None:
         """
         Generates a new proxy connection.
         """
+        # Generate proxy connection
         self.proxy_connection = generate_tcp_socket(self.dst_address.address_type)
         self.proxy_connection.connect((self.dst_address.ip, self.dst_address.port))
         self.set_proxy_address()
+        # Set sockets to non-blocking
+        self.client_connection.setblocking(False)
+        self.proxy_connection.setblocking(False)
+        # Register sockets with selector
+        self.selector.register(self.client_connection, selectors.EVENT_READ)
+        self.selector.register(self.proxy_connection, selectors.EVENT_READ)
 
     def listen_and_relay(self) -> None:
         """
@@ -45,13 +53,8 @@ class TCPRelay(BaseRelay):
 
         try:
             while True:
-                # Wait until client or remote is available for read
-                readable_sockets, _, _ = select.select(
-                    [self.client_connection, self.proxy_connection], [], []
-                )
-
-                for sock in readable_sockets:
-                    # Determine which socket is available for read
+                for key, _ in self.selector.select(timeout=3):
+                    sock = key.fileobj
                     other_sock = (
                         self.proxy_connection
                         if sock is self.client_connection
@@ -148,5 +151,10 @@ class TCPRelay(BaseRelay):
 
     def _cleanup(self):
         for sock in [self.client_connection, self.proxy_connection]:
-            sock.close()
-            self._log_connection_closed()
+            try:
+                self.selector.unregister(sock)
+            except Exception as e:
+                logger.exception(f"Error unregistering socket: {e}")
+            finally:
+                sock.close()
+                self._log_connection_closed()
