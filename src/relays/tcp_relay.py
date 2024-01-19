@@ -76,11 +76,11 @@ class TCPRelay(BaseRelay):
                     # Handle incoming data
                     data: bytes = self._recv_data(sock)
                     if not data:
-                        break
+                        return
 
                     while data:
                         # Send data loop to other socket
-                        sent: int = other_sock.send(data)
+                        sent: int = self._send_data(other_sock, data)
                         self._log_relay(sock_info, other_info, sent)
                         data = data[sent:]
 
@@ -147,7 +147,7 @@ class TCPRelay(BaseRelay):
             return sock.recv(4096)
         except socket.error as e:
             logger.exception(f"Error receiving data: {e}")
-            return None
+            return b""
 
     def _cleanup(self):
         for sock in [self.client_connection, self.proxy_connection]:
