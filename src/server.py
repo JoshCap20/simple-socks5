@@ -144,8 +144,15 @@ class TCPProxyServer(StreamRequestHandler):
     def finish(self):
         """
         Called after handle() to perform any clean-up actions required.
+
+        Ensures proper closure of each socket.
         """
-        self.connection.close()
+        try:
+            self.connection.shutdown(socket.SHUT_RDWR)
+        except socket.error:
+            pass  # Handle already closed socket
+        finally:
+            self.connection.close()
 
     def _log_connection(self, dst_address: DetailedAddress) -> None:
         """

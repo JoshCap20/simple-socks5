@@ -38,15 +38,6 @@ def parse_arguments() -> argparse.Namespace:
         help="Set the logging level.",
     )
 
-    # # Tor Configuration
-    # tor_group = parser.add_argument_group("Tor Configuration")
-    # tor_group.add_argument(
-    #     "-UT",
-    #     "--use-tor",
-    #     action="store_true",
-    #     help="Use Tor to make requests to the destination server.",
-    # )
-
     # Version Information
     parser.add_argument(
         "-V", "--version", action="version", version=f"%(prog)s {__version__}"

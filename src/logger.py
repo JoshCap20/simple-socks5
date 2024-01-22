@@ -1,4 +1,5 @@
 import logging
+from logging.handlers import RotatingFileHandler
 
 from .config import ProxyConfiguration
 
@@ -48,27 +49,28 @@ def get_logger(name: str) -> logging.Logger:
 def configure_logger(logger: logging.Logger) -> None:
     logging_level = ProxyConfiguration.get_logging_level()
 
-    logger.setLevel(logging.DEBUG)
+    if logging_level == logging.NOTSET:
+        return
 
-    if logging_level != logging.NOTSET:
-        # Console Handler for logging
-        c_handler = logging.StreamHandler()
-        c_handler.setLevel(logging_level)
-        c_format = ColorFormatter("[%(asctime)s] - [%(levelname)s] - %(message)s")
-        c_handler.setFormatter(c_format)
+    logger.setLevel(logging_level)
 
-        # File Handler for logging errors only
-        f_handler = logging.FileHandler("errors.log")
-        f_handler.setLevel(logging.ERROR)
-        f_format = logging.Formatter(
-            "[%(asctime)s] - [%(name)s] - [%(levelname)s] - [%(message)s]"
-        )
-        f_handler.setFormatter(f_format)
+    # Console Handler for logging
+    c_handler = logging.StreamHandler()
+    c_handler.setLevel(logging_level)
+    c_format = ColorFormatter("[%(asctime)s] - [%(levelname)s] - %(message)s")
+    c_handler.setFormatter(c_format)
 
-        logger.addHandler(c_handler)
-        logger.addHandler(f_handler)
-    else:
-        logger.addHandler(logging.NullHandler())
+    # File Handler for logging errors only
+    log_file_size: int = 1048576  # 1 MB
+    f_handler = RotatingFileHandler("errors.log", maxBytes=log_file_size, backupCount=5)
+    f_handler.setLevel(logging.ERROR)
+    f_format = logging.Formatter(
+        "[%(asctime)s] - [%(name)s] - [%(levelname)s] - [%(message)s]"
+    )
+    f_handler.setFormatter(f_format)
+
+    logger.addHandler(c_handler)
+    logger.addHandler(f_handler)
 
 
 def update_loggers() -> None:
