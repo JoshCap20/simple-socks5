@@ -1,4 +1,5 @@
 import logging
+from logging.handlers import RotatingFileHandler
 
 from .config import ProxyConfiguration
 
@@ -58,7 +59,10 @@ def configure_logger(logger: logging.Logger) -> None:
         c_handler.setFormatter(c_format)
 
         # File Handler for logging errors only
-        f_handler = logging.FileHandler("errors.log")
+        log_file_size: int = 1048576  # 1 MB
+        f_handler = RotatingFileHandler(
+            "errors.log", maxBytes=log_file_size, backupCount=5
+        )
         f_handler.setLevel(logging.ERROR)
         f_format = logging.Formatter(
             "[%(asctime)s] - [%(name)s] - [%(levelname)s] - [%(message)s]"
