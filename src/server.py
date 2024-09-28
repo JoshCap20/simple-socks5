@@ -64,7 +64,7 @@ class TCPProxyServer(StreamRequestHandler):
         )
         self._log_connection(dst_request.address)
 
-        reply: bytes | None = None
+        reply: bytes = None
 
         try:
             if dst_request.command == CommandCodes.CONNECT.value:
