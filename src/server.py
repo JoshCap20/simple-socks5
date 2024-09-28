@@ -25,7 +25,7 @@ class ThreadingTCPServer(ThreadingMixIn, TCPServer):
     https://docs.python.org/3/library/socketserver.html#socketserver.ThreadingMixIn
     """
 
-    pass
+    daemon_threads = True
 
 
 class TCPProxyServer(StreamRequestHandler):
@@ -100,7 +100,6 @@ class TCPProxyServer(StreamRequestHandler):
                     self.connection.sendall(reply)
                 except BrokenPipeError as e:
                     logger.error(f"Error sending reply: {e}")
-            self.server.shutdown_request(self.request)
 
     def handle_connect(self, dst_address: DetailedAddress) -> None:
         """
