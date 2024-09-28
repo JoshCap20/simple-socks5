@@ -76,17 +76,16 @@ class TCPHandler(BaseHandler):
             )
 
             # Handles authentication
-            match negotiated_authentication:
-                case MethodCodes.NO_AUTHENTICATION_REQUIRED:
-                    return True
-                case MethodCodes.USERNAME_PASSWORD:
-                    return self._handle_username_password_auth()
-                case MethodCodes.GSSAPI:
-                    # Not implemented yet
-                    return self._handle_gssapi_auth()
-                case _:
-                    logger.warn("No acceptable authentication methods")
-                    return False
+            if negotiated_authentication == MethodCodes.NO_AUTHENTICATION_REQUIRED:
+                return True
+            elif negotiated_authentication == MethodCodes.USERNAME_PASSWORD:
+                return self._handle_username_password_auth()
+            elif negotiated_authentication == MethodCodes.GSSAPI:
+                # Not implemented yet
+                return self._handle_gssapi_auth()
+            else:
+                logger.warn("No acceptable authentication methods")
+                return False
 
         except socket.error as e:
             logger.exception(f"Socket error during handshake: {e}")
