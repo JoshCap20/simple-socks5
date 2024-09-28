@@ -48,7 +48,7 @@ jobs:
         file: ./Dockerfile.nologs
         platforms: linux/amd64,linux/arm/v7,linux/arm64
         push: true
-        tags: ${{ secrets.DOCKERHUB_USERNAME }}/simple-socks5:logging-disable
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/simple-socks5:logging-disabled
         labels: |
           org.opencontainers.image.title=Simple SOCKS5 Proxy (Logging Disabled)
           org.opencontainers.image.description=Multi-architecture SOCKS5 proxy server without logging
