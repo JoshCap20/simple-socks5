@@ -20,16 +20,20 @@ def main(args: Namespace):
 
     update_loggers()
 
-    with ThreadingTCPServer(
-        (ProxyConfiguration.get_host(), ProxyConfiguration.get_port()), TCPProxyServer
-    ) as tcp_server:
-        logger.info(f"Server started on {ProxyConfiguration.get_address()}")
+    try:
+        with ThreadingTCPServer(
+            (ProxyConfiguration.get_host(), ProxyConfiguration.get_port()), TCPProxyServer
+        ) as tcp_server:
+            logger.info(f"Server started on {ProxyConfiguration.get_address()}")
 
-        try:
-            tcp_server.serve_forever()
-        except KeyboardInterrupt:
-            logger.info("Server shutting down...")
-        finally:
-            tcp_server.server_close()
-            tcp_server.shutdown()
-            logger.info("Server terminated.")
+            try:
+                tcp_server.serve_forever()
+            except KeyboardInterrupt:
+                logger.info("Server shutting down...")
+            finally:
+                tcp_server.server_close()
+                tcp_server.shutdown()
+                logger.info("Server terminated.")
+    except OSError as e:
+        logger.error(f"Error starting server: {e}")
+        exit(1)
