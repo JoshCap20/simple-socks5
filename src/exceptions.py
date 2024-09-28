@@ -1,3 +1,6 @@
+from typing import Union
+
+
 class InvalidVersionError(Exception):
     """Exception raised when an invalid SOCKS version is encountered."""
 
@@ -12,5 +15,5 @@ class InvalidRequestError(Exception):
         request (bytes | int): The invalid request that caused the error.
     """
 
-    def __init__(self, request: bytes | int) -> None:
+    def __init__(self, request: Union[bytes, int]) -> None:
         super().__init__(f"Invalid request: {request}")

@@ -64,25 +64,24 @@ class TCPProxyServer(StreamRequestHandler):
         )
         self._log_connection(dst_request.address)
 
-        reply: bytes | None = None
+        reply: bytes = None
 
         try:
-            match dst_request.command:
-                case CommandCodes.CONNECT.value:
-                    # CONNECT
-                    reply = self.handle_connect(dst_request.address)
+            if dst_request.command == CommandCodes.CONNECT.value:
+                # CONNECT
+                reply = self.handle_connect(dst_request.address)
 
-                case CommandCodes.BIND.value:
-                    # TODO: BIND
-                    reply = self.handle_bind(dst_request.address)
+            elif dst_request.command == CommandCodes.BIND.value:
+                # TODO: BIND
+                reply = self.handle_bind(dst_request.address)
 
-                case CommandCodes.UDP_ASSOCIATE.value:
-                    # UDP ASSOCIATE
-                    reply = self.handle_udp_associate(dst_request.address)
+            elif dst_request.command == CommandCodes.UDP_ASSOCIATE.value:
+                # UDP ASSOCIATE
+                reply = self.handle_udp_associate(dst_request.address)
 
-                case _:
-                    # Invalid command
-                    reply = generate_command_not_supported_reply()
+            else:
+                # Invalid command
+                reply = generate_command_not_supported_reply()
 
         except ConnectionRefusedError:
             logger.error(f"Connection refused: {dst_request.address}")

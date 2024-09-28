@@ -74,22 +74,21 @@ class BaseHandler:
 
     def _parse_address(self, address_type: int) -> DetailedAddress:
         try:
-            match address_type:
-                case AddressTypeCodes.IPv4.value:
-                    address: str = socket.inet_ntoa(self.connection.recv(4))
-                    domain_name: str = self._gethostbyaddr(address)
-                case AddressTypeCodes.DOMAIN_NAME.value:
-                    domain_length = self.connection.recv(1)[0]
-                    domain_name = self.connection.recv(domain_length).decode()  # type: ignore
-                    address: str = self._gethostbyname(domain_name)
-                    address_type = AddressTypeCodes.IPv4.value
-                case AddressTypeCodes.IPv6.value:
-                    address: str = socket.inet_ntop(
-                        socket.AF_INET6, self.connection.recv(16)
-                    )
-                    domain_name: str = self._gethostbyaddr(address)
-                case _:
-                    raise InvalidRequestError(address_type)
+            if address_type == AddressTypeCodes.IPv4.value:
+                address: str = socket.inet_ntoa(self.connection.recv(4))
+                domain_name: str = self._gethostbyaddr(address)
+            elif address_type == AddressTypeCodes.DOMAIN_NAME.value:
+                domain_length = self.connection.recv(1)[0]
+                domain_name = self.connection.recv(domain_length).decode()  # type: ignore
+                address: str = self._gethostbyname(domain_name)
+                address_type = AddressTypeCodes.IPv4.value
+            elif address_type == AddressTypeCodes.IPv6.value:
+                address: str = socket.inet_ntop(
+                    socket.AF_INET6, self.connection.recv(16)
+                )
+                domain_name: str = self._gethostbyaddr(address)
+            else:
+                raise InvalidRequestError(address_type)
 
             port: int = struct.unpack("!H", self.connection.recv(2))[0]
             return DetailedAddress(
