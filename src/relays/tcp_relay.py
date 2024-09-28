@@ -53,7 +53,13 @@ class TCPRelay(BaseRelay):
 
         try:
             while True:
-                for key, _ in self.selector.select(timeout=3):
+                events = self.selector.select(timeout=3)
+                if not events:
+                    if self.client_connection.fileno() == -1 or self.proxy_connection.fileno() == -1:
+                        break
+                    continue
+                
+                for key, _ in events:
                     sock = key.fileobj
                     other_sock = (
                         self.proxy_connection
@@ -150,11 +156,16 @@ class TCPRelay(BaseRelay):
             raise e
 
     def _cleanup(self) -> None:
+        self._log_connection_closed()
         for sock in [self.client_connection, self.proxy_connection]:
             try:
                 self.selector.unregister(sock)
             except Exception as e:
                 logger.exception(f"Error unregistering socket: {e}")
             finally:
+                try:
+                    sock.shutdown(socket.SHUT_RDWR)
+                except Exception as e:
+                    logger.exception(f"Error shutting down socket: {e}")
                 sock.close()
-                self._log_connection_closed()
+        self.selector.close()
