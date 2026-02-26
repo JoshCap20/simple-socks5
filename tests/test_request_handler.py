@@ -325,23 +325,23 @@ class TestAuthEnforcement(unittest.TestCase):
     def tearDown(self):
         self.connection.close()
 
-    @patch("src.handlers.tcp.AUTH_REQUIRED", True)
-    def test_auth_required_rejects_no_auth_only_client(self):
-        """When AUTH_REQUIRED is True, a client offering only NO_AUTH should be rejected."""
+    @patch("src.handlers.tcp.auth_required", return_value=True)
+    def test_auth_required_rejects_no_auth_only_client(self, _mock):
+        """When auth_required() is True, a client offering only NO_AUTH should be rejected."""
         methods = b"\x00"
         result = self.handler._negotiate_authentication_method(methods)
         self.assertEqual(result, MethodCodes.NO_ACCEPTABLE_METHODS)
 
-    @patch("src.handlers.tcp.AUTH_REQUIRED", True)
-    def test_auth_required_accepts_username_password(self):
-        """When AUTH_REQUIRED is True, USERNAME_PASSWORD should still be accepted."""
+    @patch("src.handlers.tcp.auth_required", return_value=True)
+    def test_auth_required_accepts_username_password(self, _mock):
+        """When auth_required() is True, USERNAME_PASSWORD should still be accepted."""
         methods = b"\x00\x02"
         result = self.handler._negotiate_authentication_method(methods)
         self.assertEqual(result, MethodCodes.USERNAME_PASSWORD)
 
-    @patch("src.handlers.tcp.AUTH_REQUIRED", False)
-    def test_default_allows_no_auth(self):
-        """Default behavior (AUTH_REQUIRED=False) should allow NO_AUTH."""
+    @patch("src.handlers.tcp.auth_required", return_value=False)
+    def test_default_allows_no_auth(self, _mock):
+        """Default behavior (auth_required()=False) should allow NO_AUTH."""
         methods = b"\x00"
         result = self.handler._negotiate_authentication_method(methods)
         self.assertEqual(result, MethodCodes.NO_AUTHENTICATION_REQUIRED)
