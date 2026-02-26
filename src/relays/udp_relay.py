@@ -12,6 +12,10 @@ from ..utils import (
 
 logger = get_logger(__name__)
 
+UDP_RECV_TIMEOUT = 120  # seconds
+UDP_FORWARD_TIMEOUT = 10  # seconds
+UDP_BUFFER_SIZE = 4096
+
 
 class UDPRelay(BaseRelay):
     """
@@ -19,76 +23,72 @@ class UDPRelay(BaseRelay):
     """
 
     def __init__(self, client_connection: socket.socket, dst_address: DetailedAddress):
-        """
-        Initializes a new instance of the UDPRelay class.
-
-        Args:
-            client_connection (socket.socket): The client socket.
-            dst_address (DetailedAddress): The destination address.
-        """
         super().__init__(client_connection, dst_address)
         self.generate_proxy_connection()
 
     def generate_proxy_connection(self) -> None:
-        """
-        Generates a new proxy connection.
-        """
         self.proxy_connection = generate_udp_socket(self.dst_address.address_type)
         self.proxy_connection.bind(("", 0))  # Bind to any available port
+        self.proxy_connection.settimeout(UDP_RECV_TIMEOUT)
         self.set_proxy_address()
 
     def listen_and_relay(self):
-        """
-        Listens for incoming UDP packets and relays them to the actual destination.
-        """
-        # TODO: Refactor this later to make code cleaner
-        while True:
-            # Receive data from the client
-            data, addr = self.proxy_connection.recvfrom(4096)
-            if not data:
-                break
+        try:
+            while True:
+                data, addr = self.proxy_connection.recvfrom(UDP_BUFFER_SIZE)
 
-            # Extract the UDP datagram
-            datagram = UDPHandler.parse_udp_datagram(data)
+                datagram = UDPHandler.parse_udp_datagram(data)
 
-            if datagram.frag != 0:
-                # Per RFC 1928, "an implementation that does not support fragmentation MUST drop any datagram whose FRAG field is other than X'00'."
-                logger.debug(
-                    f"(UDP) Dropped datagram: {addr} -> {datagram.dst_addr}:{datagram.dst_port}, Size: {len(datagram.data)} bytes"
-                )
-                continue
+                if datagram.frag != 0:
+                    logger.debug(
+                        f"(UDP) Dropped fragmented datagram: {addr} -> "
+                        f"{datagram.dst_addr}:{datagram.dst_port}, "
+                        f"Size: {len(datagram.data)} bytes"
+                    )
+                    continue
 
-            # Forward the data to the actual destination
-            with socket.socket(
-                map_address_enum_to_socket_family(datagram.address_type),
-                socket.SOCK_DGRAM,
-            ) as forward_socket:
-                forward_socket.sendto(
-                    datagram.data, (datagram.dst_addr, datagram.dst_port)
-                )
+                self._forward_packet(datagram, addr)
+
+        except socket.timeout:
+            logger.debug("UDP relay timed out waiting for data")
+        except OSError as e:
+            logger.error(f"UDP relay socket error: {e}")
+        finally:
+            try:
+                self.proxy_connection.close()
+            except OSError:
+                pass
+
+    def _forward_packet(self, datagram, client_addr: tuple) -> None:
+        with socket.socket(
+            map_address_enum_to_socket_family(datagram.address_type),
+            socket.SOCK_DGRAM,
+        ) as forward_socket:
+            forward_socket.settimeout(UDP_FORWARD_TIMEOUT)
+            forward_socket.sendto(
+                datagram.data, (datagram.dst_addr, datagram.dst_port)
+            )
+            self._log_relay(
+                BaseAddress(client_addr[0], client_addr[1]),
+                BaseAddress(datagram.dst_addr, datagram.dst_port),
+                len(datagram.data),
+            )
+
+            try:
+                response, _ = forward_socket.recvfrom(UDP_BUFFER_SIZE)
+                self.proxy_connection.sendto(response, client_addr)
                 self._log_relay(
-                    BaseAddress(addr[0], addr[1]),
                     BaseAddress(datagram.dst_addr, datagram.dst_port),
-                    len(datagram.data),
-                )
-
-                response, _ = forward_socket.recvfrom(4096)
-                self.proxy_connection.sendto(response, addr)
-                self._log_relay(
-                    BaseAddress(datagram.dst_addr, datagram.dst_port),
-                    BaseAddress(addr[0], addr[1]),
+                    BaseAddress(client_addr[0], client_addr[1]),
                     len(response),
+                )
+            except socket.timeout:
+                logger.debug(
+                    f"UDP forward timeout waiting for response from "
+                    f"{datagram.dst_addr}:{datagram.dst_port}"
                 )
 
     def _log_relay(self, src_addr: BaseAddress, dst_addr: BaseAddress, data_len: int):
-        """
-        Logs the relay of data between the client and the destination.
-
-        Args:
-            src_addr (BaseAddress): The source socket information.
-            dst_addr (BaseAddress): The destination socket information.
-            data_len (int): The length of the data sent.
-        """
         logger.debug(
             base_relay_template.substitute(
                 protocol="UDP",
