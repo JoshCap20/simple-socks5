@@ -86,6 +86,7 @@ class TCPProxyServer(StreamRequestHandler):
         )
         self._log_connection(dst_request.address)
 
+        atyp = dst_request.address.address_type
         try:
             if dst_request.command == CommandCodes.CONNECT.value:
                 self.handle_connect(dst_request.address)
@@ -97,17 +98,17 @@ class TCPProxyServer(StreamRequestHandler):
                 self.handle_udp_associate(dst_request.address)
 
             else:
-                self._send_error_reply(generate_command_not_supported_reply())
+                self._send_error_reply(generate_command_not_supported_reply(atyp))
 
         except ConnectionRefusedError:
             logger.error(f"Connection refused: {dst_request.address}")
-            self._send_error_reply(generate_connection_refused_reply())
+            self._send_error_reply(generate_connection_refused_reply(atyp))
         except socket.gaierror:
             logger.error(f"Host unreachable: {dst_request.address}")
-            self._send_error_reply(generate_host_unreachable_reply())
+            self._send_error_reply(generate_host_unreachable_reply(atyp))
         except Exception as e:
             logger.error(f"Exception: {e}")
-            self._send_error_reply(generate_general_socks_server_failure_reply())
+            self._send_error_reply(generate_general_socks_server_failure_reply(atyp))
 
     def handle_connect(self, dst_address: DetailedAddress) -> None:
         """
@@ -146,7 +147,7 @@ class TCPProxyServer(StreamRequestHandler):
         Handles BIND command.
         """
         logger.error("BIND command not supported")
-        self._send_error_reply(generate_command_not_supported_reply())
+        self._send_error_reply(generate_command_not_supported_reply(address.address_type))
 
     def _send_error_reply(self, reply: bytes) -> None:
         """
