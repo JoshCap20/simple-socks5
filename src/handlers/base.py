@@ -110,58 +110,47 @@ class BaseHandler:
             logger.exception(f"Socket error during address and port parsing: {e}")
             raise
 
+    def _dns_lookup_with_timeout(self, fn, label: str):
+        """Run a DNS function on a daemon thread with timeout. Returns result or None."""
+        result = [None]
+        error = [None]
+
+        def lookup():
+            try:
+                result[0] = fn()
+            except Exception as e:
+                error[0] = e
+
+        t = threading.Thread(target=lookup, daemon=True)
+        t.start()
+        t.join(timeout=DNS_REVERSE_LOOKUP_TIMEOUT)
+
+        if t.is_alive():
+            logger.debug(f"DNS lookup timed out for {label}")
+            return None
+        if error[0] is not None:
+            if not isinstance(error[0], OSError):
+                logger.error(f"DNS lookup error for {label}", exc_info=error[0])
+            return None
+        return result[0]
+
     def _gethostbyaddr(self, ip: str) -> str:
-        result = [None]
-        error = [None]
+        result = self._dns_lookup_with_timeout(
+            lambda: socket.gethostbyaddr(ip)[0], ip
+        )
+        return result if result is not None else ip
 
-        def lookup():
-            try:
-                result[0] = socket.gethostbyaddr(ip)[0]
-            except Exception as e:
-                error[0] = e
-
-        t = threading.Thread(target=lookup, daemon=True)
-        t.start()
-        t.join(timeout=DNS_REVERSE_LOOKUP_TIMEOUT)
-
-        if t.is_alive():
-            logger.debug(f"Reverse DNS lookup timed out for {ip}")
-            return ip
-        if error[0] is not None:
-            if not isinstance(error[0], OSError):
-                logger.error("Error setting hostname", exc_info=error[0])
-            return ip
-        return result[0] if result[0] is not None else ip
-
-    def _resolve_hostname(self, name: str) -> tuple:
+    def _resolve_hostname(self, name: str) -> tuple[str, int]:
         """Resolve a hostname to (ip, address_type_value) using getaddrinfo for dual-stack support."""
-        result = [None]
-        error = [None]
-
-        def lookup():
-            try:
-                result[0] = socket.getaddrinfo(name, None, socket.AF_UNSPEC, socket.SOCK_STREAM)
-            except Exception as e:
-                error[0] = e
-
-        t = threading.Thread(target=lookup, daemon=True)
-        t.start()
-        t.join(timeout=DNS_REVERSE_LOOKUP_TIMEOUT)
-
-        if t.is_alive():
-            logger.debug(f"DNS lookup timed out for {name}")
-            return name, AddressTypeCodes.IPv4.value
-        if error[0] is not None:
-            if not isinstance(error[0], OSError):
-                logger.error("Error resolving hostname", exc_info=error[0])
-            return name, AddressTypeCodes.IPv4.value
-        if not result[0]:
+        result = self._dns_lookup_with_timeout(
+            lambda: socket.getaddrinfo(name, None, socket.AF_UNSPEC, socket.SOCK_STREAM),
+            name,
+        )
+        if not result:
             return name, AddressTypeCodes.IPv4.value
 
-        family, _, _, _, sockaddr = result[0][0]
+        family, _, _, _, sockaddr = result[0]
         ip = sockaddr[0]
         if family == socket.AF_INET6:
-            address_type = AddressTypeCodes.IPv6.value
-        else:
-            address_type = AddressTypeCodes.IPv4.value
-        return ip, address_type
+            return ip, AddressTypeCodes.IPv6.value
+        return ip, AddressTypeCodes.IPv4.value
