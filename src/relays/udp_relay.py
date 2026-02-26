@@ -1,7 +1,7 @@
 import socket
 
 from .base import BaseRelay
-from ..constants import RELAY_BUFFER_SIZE
+from ..constants import RELAY_BUFFER_SIZE, UDP_RECV_TIMEOUT, UDP_FORWARD_TIMEOUT
 from ..models import DetailedAddress, BaseAddress
 from ..logger import get_logger
 from ..handlers import UDPHandler
@@ -12,10 +12,6 @@ from ..utils import (
 )
 
 logger = get_logger(__name__)
-
-UDP_RECV_TIMEOUT = 120  # seconds
-UDP_FORWARD_TIMEOUT = 10  # seconds
-UDP_BUFFER_SIZE = RELAY_BUFFER_SIZE
 
 
 class UDPRelay(BaseRelay):
@@ -36,7 +32,7 @@ class UDPRelay(BaseRelay):
     def listen_and_relay(self):
         try:
             while True:
-                data, addr = self.proxy_connection.recvfrom(UDP_BUFFER_SIZE)
+                data, addr = self.proxy_connection.recvfrom(RELAY_BUFFER_SIZE)
 
                 datagram = UDPHandler.parse_udp_datagram(data)
 
@@ -76,7 +72,7 @@ class UDPRelay(BaseRelay):
             )
 
             try:
-                response, _ = forward_socket.recvfrom(UDP_BUFFER_SIZE)
+                response, _ = forward_socket.recvfrom(RELAY_BUFFER_SIZE)
                 self.proxy_connection.sendto(response, client_addr)
                 self._log_relay(
                     BaseAddress(datagram.dst_addr, datagram.dst_port),
