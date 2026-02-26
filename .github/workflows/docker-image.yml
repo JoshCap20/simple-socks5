@@ -40,14 +40,15 @@ jobs:
           org.opencontainers.image.title=Simple SOCKS5 Proxy
           org.opencontainers.image.description=Multi-architecture SOCKS5 proxy server
 
-    # Build and push image with 'logging-disable' tag using NoLoggingDockerFile
-    - name: Build and push Docker image (logging-disable tag)
+    # Build and push image with 'logging-disabled' tag using build arg
+    - name: Build and push Docker image (logging-disabled tag)
       uses: docker/build-push-action@v5
       with:
         context: .
-        file: ./Dockerfile.nologs
+        file: ./Dockerfile
         platforms: linux/amd64,linux/arm/v7,linux/arm64
         push: true
+        build-args: LOGGING_LEVEL=disabled
         tags: ${{ secrets.DOCKERHUB_USERNAME }}/simple-socks5:logging-disabled
         labels: |
           org.opencontainers.image.title=Simple SOCKS5 Proxy (Logging Disabled)
