@@ -63,10 +63,6 @@ class BaseHandler:
             o  IP V6 address: X'04'
         o  DST.ADDR - desired destination address
         o  DST.PORT - desired destination port in network octet order
-
-
-        Args:
-            connection (socket.socket): The client socket.
         """
         try:
             header = self._recv_exact(4)
