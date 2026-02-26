@@ -1,3 +1,4 @@
+import logging
 import unittest
 
 from src.config import ProxyConfiguration
@@ -22,7 +23,6 @@ class TestProxyConfiguration(unittest.TestCase):
         self.assertTrue(FreshConfig.is_initialized())
 
     def test_get_logging_level_returns_correct_level(self):
-        import logging
 
         class FreshConfig(ProxyConfiguration):
             pass
@@ -31,7 +31,6 @@ class TestProxyConfiguration(unittest.TestCase):
         self.assertEqual(FreshConfig.get_logging_level(), logging.INFO)
 
     def test_get_logging_level_disabled_returns_notset(self):
-        import logging
 
         class FreshConfig(ProxyConfiguration):
             pass
