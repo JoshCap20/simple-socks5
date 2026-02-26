@@ -25,9 +25,12 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        python -m pip install flake8 pytest
+        python -m pip install flake8 pytest pytest-cov
 
-    - name: Set PYTHONPATH and Test with pytest
+    - name: Lint with flake8
       run: |
-        export PYTHONPATH=$(pwd)
-        pytest
+        flake8 src/ tests/
+
+    - name: Test with pytest
+      run: |
+        pytest --cov=src --cov-fail-under=60

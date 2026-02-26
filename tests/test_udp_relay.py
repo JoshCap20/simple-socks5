@@ -1,7 +1,7 @@
 import socket
 import struct
 import unittest
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch
 
 from src.constants import AddressTypeCodes
 from src.models import DetailedAddress

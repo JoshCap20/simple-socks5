@@ -1,4 +1,3 @@
-import socket as socket_module
 from socket import socket
 
 from ..models import DetailedAddress, BindAddress

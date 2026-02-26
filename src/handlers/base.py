@@ -134,6 +134,6 @@ class BaseHandler:
             return socket.gethostbyname(name)
         except OSError:
             return name
-        except Exception as e:
+        except Exception:
             logger.exception("Error setting hostname")
             return name

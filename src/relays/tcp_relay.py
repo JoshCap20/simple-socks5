@@ -62,7 +62,7 @@ class TCPRelay(BaseRelay):
                     if self.client_connection.fileno() == -1 or self.proxy_connection.fileno() == -1:
                         break
                     continue
-                
+
                 for key, _ in events:
                     sock = key.fileobj
                     other_sock = (

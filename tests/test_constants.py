@@ -5,6 +5,7 @@ Ensures that the constants are correct and that hex values are correctly mapped 
 import unittest
 from src.constants import ReplyCodes, MethodCodes, AddressTypeCodes, CommandCodes
 
+
 class TestReplyCodes(unittest.TestCase):
     def test_succeeded(self):
         self.assertEqual(ReplyCodes.SUCCEEDED.value, 0)
@@ -36,6 +37,7 @@ class TestReplyCodes(unittest.TestCase):
     def test_unassigned(self):
         self.assertEqual(ReplyCodes.UNASSIGNED.value, 9)
 
+
 class TestMethodCodes(unittest.TestCase):
     def test_no_authentication_required(self):
         self.assertEqual(MethodCodes.NO_AUTHENTICATION_REQUIRED.value, 0)
@@ -48,7 +50,8 @@ class TestMethodCodes(unittest.TestCase):
 
     def test_no_acceptable_methods(self):
         self.assertEqual(MethodCodes.NO_ACCEPTABLE_METHODS.value, 255)
-        
+
+
 class TestAddressTypeCodes(unittest.TestCase):
     def test_ipv4(self):
         self.assertEqual(AddressTypeCodes.IPv4.value, 1)
@@ -58,7 +61,8 @@ class TestAddressTypeCodes(unittest.TestCase):
 
     def test_ipv6(self):
         self.assertEqual(AddressTypeCodes.IPv6.value, 4)
-        
+
+
 class TestCommandCodes(unittest.TestCase):
     def test_connect(self):
         self.assertEqual(CommandCodes.CONNECT.value, 1)
@@ -68,6 +72,7 @@ class TestCommandCodes(unittest.TestCase):
 
     def test_udp_associate(self):
         self.assertEqual(CommandCodes.UDP_ASSOCIATE.value, 3)
+
 
 if __name__ == '__main__':
     unittest.main()

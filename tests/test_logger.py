@@ -1,9 +1,7 @@
-import logging
 import threading
 import unittest
-from unittest.mock import patch
 
-from src.logger import get_logger, _loggers, _logger_lock
+from src.logger import get_logger, _logger_lock
 
 
 class TestLoggerThreadSafety(unittest.TestCase):

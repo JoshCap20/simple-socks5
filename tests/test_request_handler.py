@@ -1,16 +1,15 @@
-import time
 import threading
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 import struct
 import socket
 from src.handlers.tcp import TCPHandler
 from src.exceptions import InvalidVersionError, InvalidRequestError
-from src.constants import SOCKS_VERSION, AddressTypeCodes, MethodCodes
-from src.models import DetailedAddress, Request
+from src.constants import AddressTypeCodes, MethodCodes
+from src.models import Request
 
 # Testing Data
-## Initial Requests
+# Initial Requests
 REQ_INCORRECT_VERSION = b"\x04\x01"
 REQ_CORRECT_VERSION_ONE_METHOD = b"\x05\x01"
 
@@ -18,7 +17,7 @@ CORRECT_VERSION_NO_AUTH_REQUIRED = [b"\x05\x01", b"\x00"]
 CORRECT_VERSION_AUTH_REQUIRED = [b"\x05\x01", b"\x02"]
 CORRECT_VERSION_AUTH_OR_NO_AUTH = [b"\x05\x02", b"\x00\x02"]
 
-## Initial Responses
+# Initial Responses
 RESP_CORRECT_VERSION_NO_AUTH_REQUIRED = b"\x05\x00"
 RESP_CORRECT_VERSION_AUTH_REQUIRED = b"\x05\x02"
 RESP_CORRECT_VERSION_NO_ACCEPTABLE_METHODS = b"\x05\xFF"
@@ -46,7 +45,7 @@ class TestTCPRequestHandlerIPv4(unittest.TestCase):
         self, mock_sendall, mock_recv
     ):
         mock_recv.side_effect = CORRECT_VERSION_NO_AUTH_REQUIRED
-        result = self.handler.handle_request()
+        self.handler.handle_request()
         mock_sendall.assert_called_with(RESP_CORRECT_VERSION_NO_AUTH_REQUIRED)
 
     @patch("socket.socket.recv")
@@ -64,7 +63,7 @@ class TestTCPRequestHandlerIPv4(unittest.TestCase):
             chr(len(password)).encode(),
             password.encode(),
         ]
-        result = self.handler.handle_request()
+        self.handler.handle_request()
         mock_sendall.assert_called_with(RESP_LOGIN_SUCCESS)
 
     @patch("socket.socket.recv")
@@ -82,7 +81,7 @@ class TestTCPRequestHandlerIPv4(unittest.TestCase):
             chr(len(password)).encode(),
             password.encode(),
         ]
-        result = self.handler.handle_request()
+        self.handler.handle_request()
         mock_sendall.assert_called_with(RESP_LOGIN_FAILURE)
 
     @patch("socket.socket.recv")
@@ -100,7 +99,7 @@ class TestTCPRequestHandlerIPv4(unittest.TestCase):
             chr(len(password)).encode(),
             password.encode(),
         ]
-        result = self.handler.handle_request()
+        self.handler.handle_request()
         mock_sendall.assert_called_with(RESP_LOGIN_FAILURE)
 
     def test_authenticate_with_username_password_method(self):
@@ -121,7 +120,6 @@ class TestTCPRequestHandlerIPv4(unittest.TestCase):
     @patch("socket.socket.recv")
     @patch("socket.socket.sendall")
     def test_handle_username_password_auth__valid(self, mock_sendall, mock_recv):
-        methods = b"\x02"
         mock_recv.side_effect = [
             b"\x01",
             b"\x08",
@@ -151,7 +149,6 @@ class TestTCPRequestHandlerIPv4(unittest.TestCase):
     @patch("src.handlers.base.socket.gethostbyaddr")
     def test_parse_request(self, mock_gethostbyaddr, mock_recv):
         mock_gethostbyaddr.return_value = ("example.com", [], ["93.184.216.34"])
-        # VER=05, CMD=01 (CONNECT), RSV=00, ATYP=01 (IPv4), ADDR, PORT
         mock_recv.side_effect = [
             struct.pack("!BBBB", 0x05, 0x01, 0x00, 0x01),
             socket.inet_aton("93.184.216.34"),
@@ -215,7 +212,7 @@ class TestTCPRequestHandlerIPv4(unittest.TestCase):
     def test_parse_request_rejects_nonzero_rsv(self, mock_recv):
         """RFC 1928 requires RSV field to be 0x00."""
         mock_recv.side_effect = [
-            struct.pack("!BBBB", 0x05, 0x01, 0x01, 0x01),  # RSV=0x01 (invalid)
+            struct.pack("!BBBB", 0x05, 0x01, 0x01, 0x01),
         ]
         with self.assertRaises(InvalidRequestError):
             self.handler.parse_request()
@@ -241,13 +238,15 @@ class TestTCPRequestHandlerIPv4(unittest.TestCase):
     def test_gethostbyaddr_timeout_returns_ip(self, mock_gethostbyaddr):
         """Reverse DNS should return the IP if the lookup takes too long."""
         done = threading.Event()
+
         def slow_lookup(ip):
             done.wait(timeout=5)
             return ("example.com", [], [ip])
+
         mock_gethostbyaddr.side_effect = slow_lookup
         result = self.handler._gethostbyaddr("1.2.3.4")
         self.assertEqual(result, "1.2.3.4")
-        done.set()  # unblock background thread for clean shutdown
+        done.set()
 
 
 if __name__ == "__main__":
