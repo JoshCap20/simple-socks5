@@ -248,6 +248,33 @@ class TestTCPRequestHandlerIPv4(unittest.TestCase):
         self.assertEqual(result, "1.2.3.4")
         done.set()
 
+    @patch("src.handlers.base.DNS_REVERSE_LOOKUP_TIMEOUT", 0.1)
+    @patch("src.handlers.base.socket.gethostbyname")
+    def test_gethostbyname_timeout_returns_name(self, mock_gethostbyname):
+        """Forward DNS should return the name if the lookup takes too long."""
+        done = threading.Event()
+
+        def slow_lookup(name):
+            done.wait(timeout=5)
+            return "93.184.216.34"
+
+        mock_gethostbyname.side_effect = slow_lookup
+        result = self.handler._gethostbyname("example.com")
+        self.assertEqual(result, "example.com")
+        done.set()
+
+    @patch("src.handlers.base.socket.gethostbyname")
+    def test_gethostbyname_success(self, mock_gethostbyname):
+        mock_gethostbyname.return_value = "93.184.216.34"
+        result = self.handler._gethostbyname("example.com")
+        self.assertEqual(result, "93.184.216.34")
+
+    @patch("src.handlers.base.socket.gethostbyname")
+    def test_gethostbyname_failure_returns_name(self, mock_gethostbyname):
+        mock_gethostbyname.side_effect = OSError("no DNS")
+        result = self.handler._gethostbyname("example.com")
+        self.assertEqual(result, "example.com")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,6 +1,6 @@
 import struct
 import socket
-from concurrent.futures import ThreadPoolExecutor, TimeoutError
+import threading
 
 from ..constants import SOCKS_VERSION, AddressTypeCodes, DNS_REVERSE_LOOKUP_TIMEOUT
 from ..exceptions import InvalidRequestError, InvalidVersionError
@@ -114,26 +114,47 @@ class BaseHandler:
             raise
 
     def _gethostbyaddr(self, ip: str) -> str:
-        executor = ThreadPoolExecutor(max_workers=1)
-        try:
-            future = executor.submit(socket.gethostbyaddr, ip)
-            return future.result(timeout=DNS_REVERSE_LOOKUP_TIMEOUT)[0]
-        except TimeoutError:
+        result = [None]
+        error = [None]
+
+        def lookup():
+            try:
+                result[0] = socket.gethostbyaddr(ip)[0]
+            except Exception as e:
+                error[0] = e
+
+        t = threading.Thread(target=lookup, daemon=True)
+        t.start()
+        t.join(timeout=DNS_REVERSE_LOOKUP_TIMEOUT)
+
+        if t.is_alive():
             logger.debug(f"Reverse DNS lookup timed out for {ip}")
             return ip
-        except OSError:
+        if error[0] is not None:
+            if not isinstance(error[0], OSError):
+                logger.exception("Error setting hostname")
             return ip
-        except Exception:
-            logger.exception("Error setting hostname")
-            return ip
-        finally:
-            executor.shutdown(wait=False)
+        return result[0] if result[0] is not None else ip
 
     def _gethostbyname(self, name: str) -> str:
-        try:
-            return socket.gethostbyname(name)
-        except OSError:
+        result = [None]
+        error = [None]
+
+        def lookup():
+            try:
+                result[0] = socket.gethostbyname(name)
+            except Exception as e:
+                error[0] = e
+
+        t = threading.Thread(target=lookup, daemon=True)
+        t.start()
+        t.join(timeout=DNS_REVERSE_LOOKUP_TIMEOUT)
+
+        if t.is_alive():
+            logger.debug(f"DNS lookup timed out for {name}")
             return name
-        except Exception:
-            logger.exception("Error setting hostname")
+        if error[0] is not None:
+            if not isinstance(error[0], OSError):
+                logger.exception("Error setting hostname")
             return name
+        return result[0] if result[0] is not None else name
