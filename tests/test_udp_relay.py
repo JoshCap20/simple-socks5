@@ -22,6 +22,27 @@ def build_udp_datagram(dst_addr: str, dst_port: int, data: bytes, frag: int = 0,
     return header + addr_bytes + port_bytes + data
 
 
+class TestBuildUDPResponseHeader(unittest.TestCase):
+    def test_ipv4_response_header(self):
+        from src.handlers.udp import UDPHandler
+        header = UDPHandler.build_udp_response_header("10.0.0.1", 53)
+        # RSV(2) + FRAG(1) + ATYP(1) + IPv4(4) + PORT(2) = 10 bytes
+        expected = b"\x00\x00\x00\x01" + socket.inet_aton("10.0.0.1") + struct.pack("!H", 53)
+        self.assertEqual(header, expected)
+
+    def test_ipv6_response_header(self):
+        from src.handlers.udp import UDPHandler
+        addr = "2001:db8::1"
+        header = UDPHandler.build_udp_response_header(addr, 443)
+        # RSV(2) + FRAG(1) + ATYP(1) + IPv6(16) + PORT(2) = 22 bytes
+        expected = (
+            b"\x00\x00\x00\x04"
+            + socket.inet_pton(socket.AF_INET6, addr)
+            + struct.pack("!H", 443)
+        )
+        self.assertEqual(header, expected)
+
+
 class TestUDPRelay(unittest.TestCase):
     @patch("src.relays.udp_relay.generate_udp_socket")
     def test_init_creates_and_binds_socket(self, mock_gen_socket):
@@ -76,8 +97,16 @@ class TestUDPRelay(unittest.TestCase):
 
         # Verify data was sent to correct destination
         mock_fwd_sock.sendto.assert_called_once_with(b"hello", ("10.0.0.1", 53))
-        # Verify response was sent back to client
-        mock_proxy_sock.sendto.assert_called_once()
+        # Verify response was SOCKS5-encapsulated before sending back to client
+        sent_data = mock_proxy_sock.sendto.call_args[0][0]
+        # RSV(2) + FRAG(1) + ATYP(1)=IPv4 + ADDR(4) + PORT(2) + DATA
+        expected_header = (
+            b"\x00\x00\x00\x01"
+            + socket.inet_aton("10.0.0.1")
+            + struct.pack("!H", 53)
+        )
+        self.assertTrue(sent_data.startswith(expected_header))
+        self.assertTrue(sent_data.endswith(b"response"))
 
     @patch("src.relays.udp_relay.generate_udp_socket")
     def test_listen_and_relay_drops_fragmented_datagrams(self, mock_gen_socket):

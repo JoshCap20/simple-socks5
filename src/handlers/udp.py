@@ -72,3 +72,22 @@ class UDPHandler(BaseHandler):
             dst_port=dst_port,
             data=user_data,
         )
+
+    @staticmethod
+    def build_udp_response_header(addr: str, port: int) -> bytes:
+        """Build a SOCKS5 UDP response header for encapsulating remote responses.
+
+        RFC 1928 Section 7 format:
+        +----+------+------+----------+----------+
+        |RSV | FRAG | ATYP | DST.ADDR | DST.PORT |
+        +----+------+------+----------+----------+
+        | 2  |  1   |  1   | Variable |    2     |
+        +----+------+------+----------+----------+
+        """
+        try:
+            addr_bytes = socket.inet_aton(addr)
+            atyp = 0x01
+        except OSError:
+            addr_bytes = socket.inet_pton(socket.AF_INET6, addr)
+            atyp = 0x04
+        return struct.pack("!HBB", 0, 0, atyp) + addr_bytes + struct.pack("!H", port)

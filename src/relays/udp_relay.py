@@ -81,8 +81,11 @@ class UDPRelay(BaseRelay):
             )
 
             try:
-                response, _ = forward_socket.recvfrom(RELAY_BUFFER_SIZE)
-                self.proxy_connection.sendto(response, client_addr)
+                response, remote_addr = forward_socket.recvfrom(RELAY_BUFFER_SIZE)
+                header = UDPHandler.build_udp_response_header(
+                    remote_addr[0], remote_addr[1]
+                )
+                self.proxy_connection.sendto(header + response, client_addr)
                 self._log_relay(
                     BaseAddress(datagram.dst_addr, datagram.dst_port),
                     BaseAddress(client_addr[0], client_addr[1]),
