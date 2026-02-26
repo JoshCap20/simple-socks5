@@ -2,6 +2,7 @@ import socket
 import selectors
 
 from .base import BaseRelay
+from ..constants import RELAY_BUFFER_SIZE, TCP_SELECTOR_TIMEOUT
 from ..models import DetailedAddress
 from ..logger import get_logger
 from ..utils import (
@@ -56,7 +57,7 @@ class TCPRelay(BaseRelay):
 
         try:
             while True:
-                events = self.selector.select(timeout=3)
+                events = self.selector.select(timeout=TCP_SELECTOR_TIMEOUT)
                 if not events:
                     if self.client_connection.fileno() == -1 or self.proxy_connection.fileno() == -1:
                         break
@@ -153,7 +154,7 @@ class TCPRelay(BaseRelay):
 
     def _recv_data(self, sock: socket.socket) -> bytes:
         try:
-            return sock.recv(4096)
+            return sock.recv(RELAY_BUFFER_SIZE)
         except socket.error as e:
             logger.error(f"Error receiving data: {e}")
             raise e

@@ -1,6 +1,7 @@
 import socket
 
 from .base import BaseRelay
+from ..constants import RELAY_BUFFER_SIZE
 from ..models import DetailedAddress, BaseAddress
 from ..logger import get_logger
 from ..handlers import UDPHandler
@@ -14,7 +15,7 @@ logger = get_logger(__name__)
 
 UDP_RECV_TIMEOUT = 120  # seconds
 UDP_FORWARD_TIMEOUT = 10  # seconds
-UDP_BUFFER_SIZE = 4096
+UDP_BUFFER_SIZE = RELAY_BUFFER_SIZE
 
 
 class UDPRelay(BaseRelay):

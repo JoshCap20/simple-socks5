@@ -2,7 +2,7 @@ import struct
 import socket
 
 from .base import BaseHandler
-from ..constants import SOCKS_VERSION, MethodCodes, USERNAME, PASSWORD
+from ..constants import SOCKS_VERSION, MethodCodes, USERNAME, PASSWORD, AUTH_TIMEOUT
 from ..exceptions import InvalidVersionError
 from ..logger import get_logger
 from ..utils import generate_connection_method_response
@@ -145,7 +145,7 @@ class TCPHandler(BaseHandler):
                 - Connection must be closed if status is not X'00'
         """
         original_timeout = self.connection.gettimeout()
-        self.connection.settimeout(45.0)
+        self.connection.settimeout(AUTH_TIMEOUT)
         try:
             # Receive and verify the version
             version = self._recv_exact(1)
