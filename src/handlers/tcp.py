@@ -82,7 +82,7 @@ class TCPHandler(BaseHandler):
                 # Not implemented yet
                 return self._handle_gssapi_auth()
             else:
-                logger.warn("No acceptable authentication methods")
+                logger.warning("No acceptable authentication methods")
                 return False
 
         except socket.error as e:
@@ -174,7 +174,7 @@ class TCPHandler(BaseHandler):
                 return True
             else:
                 # Failure
-                logger.warn(f"Invalid authentication request: {username}")
+                logger.warning(f"Invalid authentication request: {username}")
                 self.connection.sendall(b"\x01\x01")  # version 1, status 1 (failure)
                 return False
         except socket.timeout:
@@ -192,5 +192,5 @@ class TCPHandler(BaseHandler):
         """
         GSS-API method implementation per RFC 1961.
         """
-        logger.warn("GSS-API authentication method not implemented")
+        logger.warning("GSS-API authentication method not implemented")
         return False
