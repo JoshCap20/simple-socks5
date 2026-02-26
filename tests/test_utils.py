@@ -165,7 +165,7 @@ class TestAddressToBytesUtils(unittest.TestCase):
         expected_bytes = map_address_to_bytes(address_type, ip)
         self.assertEqual(expected_bytes, b"\x11\xf8\xe6\x41")
 
-    def test_translate_address_to_bytes__ipv6_1(self):
+    def test_translate_address_to_bytes__ipv6_full(self):
         address_type = AddressTypeCodes.IPv6
         ip = "2001:0db8:85a3:0000:0000:8a2e:0370:7334"
         expected_bytes = map_address_to_bytes(address_type, ip)
@@ -174,22 +174,22 @@ class TestAddressToBytesUtils(unittest.TestCase):
             b" \x01\r\xb8\x85\xa3\x00\x00\x00\x00\x8a.\x03ps4",
         )
 
-    def test_translate_address_to_bytes__ipv6_2(self):
+    def test_translate_address_to_bytes__ipv6_loopback(self):
         address_type = AddressTypeCodes.IPv6
-        ip = "2001:0db8:85a3:0000:0000:8a2e:0370:7334"
+        ip = "::1"
         expected_bytes = map_address_to_bytes(address_type, ip)
         self.assertEqual(
             expected_bytes,
-            b" \x01\r\xb8\x85\xa3\x00\x00\x00\x00\x8a.\x03ps4",
+            b"\x00" * 15 + b"\x01",
         )
 
-    def test_translate_address_to_bytes__ipv6_3(self):
+    def test_translate_address_to_bytes__ipv6_link_local(self):
         address_type = AddressTypeCodes.IPv6
-        ip = "2001:0db8:85a3:0000:0000:8a2e:0370:7334"
+        ip = "fe80::1"
         expected_bytes = map_address_to_bytes(address_type, ip)
         self.assertEqual(
             expected_bytes,
-            b" \x01\r\xb8\x85\xa3\x00\x00\x00\x00\x8a.\x03ps4",
+            b"\xfe\x80" + b"\x00" * 13 + b"\x01",
         )
 
     def test_translate_address_to_bytes__domain_name(self):
