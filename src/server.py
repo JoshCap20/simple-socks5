@@ -162,7 +162,7 @@ class TCPProxyServer(StreamRequestHandler):
         """
         try:
             self.connection.sendall(reply)
-        except BrokenPipeError as e:
+        except OSError as e:
             logger.error(f"Error sending reply: {e}")
 
     def finish(self):

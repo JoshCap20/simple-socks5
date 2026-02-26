@@ -72,5 +72,29 @@ class TestHandleParseRequestErrors(unittest.TestCase):
         self.assertEqual(reply, b"\x05\x01\x00\x01\x00\x00\x00\x00\x00\x00")
 
 
+class TestSendErrorReply(unittest.TestCase):
+    """Verify _send_error_reply swallows all OSError subclasses."""
+
+    def _make_handler(self):
+        handler = object.__new__(TCPProxyServer)
+        handler.connection = MagicMock(spec=socket.socket)
+        return handler
+
+    def test_swallows_broken_pipe(self):
+        handler = self._make_handler()
+        handler.connection.sendall.side_effect = BrokenPipeError
+        handler._send_error_reply(b"\x05\x01\x00\x01\x00\x00\x00\x00\x00\x00")
+
+    def test_swallows_connection_reset(self):
+        handler = self._make_handler()
+        handler.connection.sendall.side_effect = ConnectionResetError
+        handler._send_error_reply(b"\x05\x01\x00\x01\x00\x00\x00\x00\x00\x00")
+
+    def test_swallows_generic_oserror(self):
+        handler = self._make_handler()
+        handler.connection.sendall.side_effect = OSError("transport endpoint closed")
+        handler._send_error_reply(b"\x05\x01\x00\x01\x00\x00\x00\x00\x00\x00")
+
+
 if __name__ == "__main__":
     unittest.main()
