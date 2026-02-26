@@ -300,28 +300,18 @@ class TestSuccessUtils(unittest.TestCase):
 
 class TestGenerateSocketUtils(unittest.TestCase):
     def test_generate_tcp_socket__ipv4(self):
-        address = DetailedAddress(
-            name="Test Localhost",
-            ip="127.0.0.1",
-            port=80,
-            address_type=AddressTypeCodes.IPv4,
-        )
-        expected_socket = generate_tcp_socket(address.address_type)
-        self.assertIsInstance(expected_socket, socket.socket)
-        self.assertEqual(expected_socket.family, socket.AF_INET)
-        self.assertEqual(expected_socket.type, socket.SOCK_STREAM)
+        sock = generate_tcp_socket(AddressTypeCodes.IPv4)
+        self.addCleanup(sock.close)
+        self.assertIsInstance(sock, socket.socket)
+        self.assertEqual(sock.family, socket.AF_INET)
+        self.assertEqual(sock.type, socket.SOCK_STREAM)
 
     def test_generate_tcp_socket__ipv6(self):
-        address = DetailedAddress(
-            name="Test Random IPv6 DetailedAddress",
-            ip="2606:2800:220:1:248:1893:25c8:1946",
-            port=80,
-            address_type=AddressTypeCodes.IPv6,
-        )
-        expected_socket = generate_tcp_socket(address.address_type)
-        self.assertIsInstance(expected_socket, socket.socket)
-        self.assertEqual(expected_socket.family, socket.AF_INET6)
-        self.assertEqual(expected_socket.type, socket.SOCK_STREAM)
+        sock = generate_tcp_socket(AddressTypeCodes.IPv6)
+        self.addCleanup(sock.close)
+        self.assertIsInstance(sock, socket.socket)
+        self.assertEqual(sock.family, socket.AF_INET6)
+        self.assertEqual(sock.type, socket.SOCK_STREAM)
 
     def test_generate_tcp_socket__domain_name(self):
         address = DetailedAddress(
