@@ -32,9 +32,9 @@ class ProxyConfiguration:
     @classmethod
     def is_initialized(cls) -> bool:
         return (
-            hasattr(cls, "host")
-            and hasattr(cls, "port")
-            and hasattr(cls, "logging_level")
+            hasattr(cls, "_host")
+            and hasattr(cls, "_port")
+            and hasattr(cls, "_logging_level")
         )
 
     @classmethod
