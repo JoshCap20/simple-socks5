@@ -308,6 +308,14 @@ class TestTCPRequestHandlerIPv4(unittest.TestCase):
         self.assertEqual(ip, "example.com")
         self.assertEqual(atyp, AddressTypeCodes.IPv4.value)
 
+    @patch("src.handlers.base.socket.getaddrinfo")
+    def test_resolve_hostname_empty_result_returns_name(self, mock_getaddrinfo):
+        """getaddrinfo returning empty list should fall back to name with IPv4."""
+        mock_getaddrinfo.return_value = []
+        ip, atyp = self.handler._resolve_hostname("example.com")
+        self.assertEqual(ip, "example.com")
+        self.assertEqual(atyp, AddressTypeCodes.IPv4.value)
+
 
 class TestAuthEnforcement(unittest.TestCase):
     def setUp(self):
