@@ -1,11 +1,16 @@
+import os
 from enum import Enum
 
 SOCKS_VERSION: int = 5
 
-# Sample username and password for testing
+USERNAME: str = os.environ.get("SOCKS5_USERNAME", "myusername")
+PASSWORD: str = os.environ.get("SOCKS5_PASSWORD", "mypassword")
 
-USERNAME: str = "myusername"
-PASSWORD: str = "mypassword"
+# Buffer and timeout constants
+RELAY_BUFFER_SIZE: int = 4096
+TCP_SELECTOR_TIMEOUT: int = 3  # seconds
+AUTH_TIMEOUT: float = 45.0  # seconds
+LOG_FILE_MAX_BYTES: int = 1048576  # 1 MB
 
 # See https://www.ietf.org/rfc/rfc1928.txt for more information about the below codes
 
