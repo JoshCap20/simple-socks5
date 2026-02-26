@@ -158,7 +158,7 @@ class TCPProxyServer(StreamRequestHandler):
 
     def _send_error_reply(self, reply: bytes) -> None:
         """
-        Sends an error reply to the client, handling broken pipe gracefully.
+        Sends an error reply to the client, swallowing OSError on send failure.
         """
         try:
             self.connection.sendall(reply)

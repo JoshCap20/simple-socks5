@@ -2,7 +2,7 @@ import struct
 import socket
 import threading
 
-from ..constants import SOCKS_VERSION, AddressTypeCodes, DNS_REVERSE_LOOKUP_TIMEOUT
+from ..constants import SOCKS_VERSION, AddressTypeCodes, DNS_LOOKUP_TIMEOUT
 from ..exceptions import InvalidRequestError, InvalidVersionError
 from ..logger import get_logger
 from ..models import DetailedAddress, Request
@@ -123,7 +123,7 @@ class BaseHandler:
 
         t = threading.Thread(target=lookup, daemon=True)
         t.start()
-        t.join(timeout=DNS_REVERSE_LOOKUP_TIMEOUT)
+        t.join(timeout=DNS_LOOKUP_TIMEOUT)
 
         if t.is_alive():
             logger.debug(f"DNS lookup timed out for {label}")

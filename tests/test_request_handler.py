@@ -252,7 +252,7 @@ class TestTCPRequestHandlerIPv4(unittest.TestCase):
         result = self.handler._gethostbyaddr("1.2.3.4")
         self.assertEqual(result, "1.2.3.4")
 
-    @patch("src.handlers.base.DNS_REVERSE_LOOKUP_TIMEOUT", 0.1)
+    @patch("src.handlers.base.DNS_LOOKUP_TIMEOUT", 0.1)
     @patch("src.handlers.base.socket.gethostbyaddr")
     def test_gethostbyaddr_timeout_returns_ip(self, mock_gethostbyaddr):
         """Reverse DNS should return the IP if the lookup takes too long."""
@@ -267,7 +267,7 @@ class TestTCPRequestHandlerIPv4(unittest.TestCase):
         self.assertEqual(result, "1.2.3.4")
         done.set()
 
-    @patch("src.handlers.base.DNS_REVERSE_LOOKUP_TIMEOUT", 0.1)
+    @patch("src.handlers.base.DNS_LOOKUP_TIMEOUT", 0.1)
     @patch("src.handlers.base.socket.getaddrinfo")
     def test_resolve_hostname_timeout_returns_name(self, mock_getaddrinfo):
         """Forward DNS should return the name with IPv4 default if the lookup takes too long."""
