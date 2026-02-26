@@ -56,6 +56,7 @@ def configure_logger(logger: logging.Logger) -> None:
     if logging_level == logging.NOTSET:
         return
 
+    logger.handlers.clear()
     logger.setLevel(logging_level)
 
     # Console Handler for logging

@@ -1,7 +1,10 @@
+import logging
 import threading
 import unittest
+from unittest.mock import patch
 
-from src.logger import get_logger, _logger_lock
+from src.config import ProxyConfiguration
+from src.logger import get_logger, configure_logger, _logger_lock
 
 
 class TestLoggerThreadSafety(unittest.TestCase):
@@ -36,6 +39,23 @@ class TestLoggerThreadSafety(unittest.TestCase):
         self.assertEqual(len(errors), 0)
         # All threads should get the same logger instance
         self.assertTrue(all(r is results[0] for r in results))
+
+    def test_configure_logger_does_not_duplicate_handlers(self):
+        """Calling configure_logger twice should not add duplicate handlers."""
+
+        class FreshConfig(ProxyConfiguration):
+            pass
+
+        FreshConfig.initialize("localhost", 1080, "debug")
+
+        with patch("src.logger.ProxyConfiguration", FreshConfig):
+            logger = logging.getLogger("test_no_dup_handlers")
+            logger.handlers.clear()
+            configure_logger(logger)
+            count_after_first = len(logger.handlers)
+            configure_logger(logger)
+            count_after_second = len(logger.handlers)
+            self.assertEqual(count_after_first, count_after_second)
 
 
 if __name__ == "__main__":
