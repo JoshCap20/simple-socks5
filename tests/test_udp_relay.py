@@ -31,7 +31,6 @@ class TestBuildUDPResponseHeader(unittest.TestCase):
         self.assertEqual(header, expected)
 
     def test_ipv6_response_header(self):
-        from src.handlers.udp import UDPHandler
         addr = "2001:db8::1"
         header = UDPHandler.build_udp_response_header(addr, 443)
         # RSV(2) + FRAG(1) + ATYP(1) + IPv6(16) + PORT(2) = 22 bytes
@@ -41,6 +40,10 @@ class TestBuildUDPResponseHeader(unittest.TestCase):
             + struct.pack("!H", 443)
         )
         self.assertEqual(header, expected)
+
+    def test_invalid_address_raises(self):
+        with self.assertRaises(ValueError):
+            UDPHandler.build_udp_response_header("not-an-ip", 80)
 
 
 class TestUDPRelay(unittest.TestCase):
