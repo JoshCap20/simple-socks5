@@ -54,16 +54,14 @@ class TCPHandler(BaseHandler):
         """
         try:
             # Parses client VER, NMETHODS, METHODS
-            header = self.connection.recv(2)
-            if len(header) < 2:
-                return False
+            header = self._recv_exact(2)
 
             version, nmethods = struct.unpack("!BB", header)
 
             if version != SOCKS_VERSION:
                 raise InvalidVersionError(version)
 
-            methods = self.connection.recv(nmethods)
+            methods = self._recv_exact(nmethods)
 
             # Handles negotiation for authentication method
             negotiated_authentication: MethodCodes = (
@@ -146,35 +144,26 @@ class TCPHandler(BaseHandler):
             o STATUS - status code (1 byte): X'00' for success, X'01' for failure
                 - Connection must be closed if status is not X'00'
         """
+        original_timeout = self.connection.gettimeout()
         self.connection.settimeout(45.0)
         try:
             # Receive and verify the version
-            version = self.connection.recv(1)
-            if not version or version != b"\x01":
+            version = self._recv_exact(1)
+            if version != b"\x01":
                 logger.error(f"Incorrect subnegotiation version: {version}")
                 self.connection.sendall(b"\x01\x01")
                 return False
 
             # Receive username length and username
-            username_len_byte = self.connection.recv(1)
-            if not username_len_byte:
-                logger.error("No username length byte received")
-                self.connection.sendall(b"\x01\x01")
-                return False
-            username_len = ord(username_len_byte)
+            username_len = self._recv_exact(1)[0]
             username = (
-                self.connection.recv(username_len).decode() if username_len else ""
+                self._recv_exact(username_len).decode() if username_len else ""
             )
 
             # Receive password length and password
-            password_len_byte = self.connection.recv(1)
-            if not password_len_byte:
-                logger.error("No password length byte received")
-                self.connection.sendall(b"\x01\x01")
-                return False
-            password_len = ord(password_len_byte)
+            password_len = self._recv_exact(1)[0]
             password = (
-                self.connection.recv(password_len).decode() if password_len else ""
+                self._recv_exact(password_len).decode() if password_len else ""
             )
 
             # Validate credentials
@@ -196,6 +185,8 @@ class TCPHandler(BaseHandler):
                 f"Socket error during username/password authentication: {e}"
             )
             return False
+        finally:
+            self.connection.settimeout(original_timeout)
 
     def _handle_gssapi_auth(self) -> bool:
         """
