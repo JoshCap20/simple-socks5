@@ -145,29 +145,85 @@ class TestTCPRequestHandlerIPv4(unittest.TestCase):
         mock_sendall.assert_called_with(RESP_LOGIN_FAILURE)
         self.assertFalse(result)
 
-    def test_parse_request(self):
-        # TODO: Implement test case for _parse_request method
-        pass
+    @patch("socket.socket.recv")
+    @patch("src.handlers.base.socket.gethostbyaddr")
+    def test_parse_request(self, mock_gethostbyaddr, mock_recv):
+        mock_gethostbyaddr.return_value = ("example.com", [], ["93.184.216.34"])
+        # VER=05, CMD=01 (CONNECT), RSV=00, ATYP=01 (IPv4), ADDR, PORT
+        mock_recv.side_effect = [
+            struct.pack("!BBBB", 0x05, 0x01, 0x00, 0x01),
+            socket.inet_aton("93.184.216.34"),
+            struct.pack("!H", 80),
+        ]
+        result = self.handler.parse_request()
+        self.assertIsInstance(result, Request)
+        self.assertEqual(result.version, 5)
+        self.assertEqual(result.command, 1)
+        self.assertEqual(result.address.ip, "93.184.216.34")
+        self.assertEqual(result.address.port, 80)
+        self.assertEqual(result.address.address_type, AddressTypeCodes.IPv4)
 
-    def test_parse_address_ipv4(self):
-        # TODO: Implement test case for _parse_address method with IPv4 address type
-        pass
+    @patch("socket.socket.recv")
+    @patch("src.handlers.base.socket.gethostbyaddr")
+    def test_parse_address_ipv4(self, mock_gethostbyaddr, mock_recv):
+        mock_gethostbyaddr.return_value = ("example.com", [], ["1.2.3.4"])
+        mock_recv.side_effect = [
+            socket.inet_aton("1.2.3.4"),
+            struct.pack("!H", 443),
+        ]
+        result = self.handler._parse_address(AddressTypeCodes.IPv4.value)
+        self.assertEqual(result.ip, "1.2.3.4")
+        self.assertEqual(result.port, 443)
+        self.assertEqual(result.name, "example.com")
+        self.assertEqual(result.address_type, AddressTypeCodes.IPv4)
 
-    def test_parse_address_domain_name(self):
-        # TODO: Implement test case for _parse_address method with domain name address type
-        pass
+    @patch("socket.socket.recv")
+    @patch("src.handlers.base.socket.gethostbyname")
+    def test_parse_address_domain_name(self, mock_gethostbyname, mock_recv):
+        mock_gethostbyname.return_value = "93.184.216.34"
+        domain = "example.com"
+        mock_recv.side_effect = [
+            bytes([len(domain)]),
+            domain.encode(),
+            struct.pack("!H", 80),
+        ]
+        result = self.handler._parse_address(AddressTypeCodes.DOMAIN_NAME.value)
+        self.assertEqual(result.ip, "93.184.216.34")
+        self.assertEqual(result.port, 80)
+        self.assertEqual(result.name, domain)
+        # Domain names get resolved to IPv4
+        self.assertEqual(result.address_type, AddressTypeCodes.IPv4)
 
-    def test_parse_address_ipv6(self):
-        # TODO: Implement test case for _parse_address method with IPv6 address type
-        pass
+    @patch("socket.socket.recv")
+    @patch("src.handlers.base.socket.gethostbyaddr")
+    def test_parse_address_ipv6(self, mock_gethostbyaddr, mock_recv):
+        ipv6 = "2001:db8::1"
+        mock_gethostbyaddr.return_value = ("ipv6host.example.com", [], [ipv6])
+        mock_recv.side_effect = [
+            socket.inet_pton(socket.AF_INET6, ipv6),
+            struct.pack("!H", 8080),
+        ]
+        result = self.handler._parse_address(AddressTypeCodes.IPv6.value)
+        self.assertEqual(result.ip, ipv6)
+        self.assertEqual(result.port, 8080)
+        self.assertEqual(result.name, "ipv6host.example.com")
+        self.assertEqual(result.address_type, AddressTypeCodes.IPv6)
 
     def test_parse_address_invalid(self):
-        # TODO: Implement test case for _parse_address method with invalid address type
-        pass
+        with self.assertRaises(InvalidRequestError):
+            self.handler._parse_address(0xFF)
 
-    def test_gethostbyaddr(self):
-        # TODO: Implement test case for _gethostbyaddr method
-        pass
+    @patch("src.handlers.base.socket.gethostbyaddr")
+    def test_gethostbyaddr_success(self, mock_gethostbyaddr):
+        mock_gethostbyaddr.return_value = ("example.com", [], ["1.2.3.4"])
+        result = self.handler._gethostbyaddr("1.2.3.4")
+        self.assertEqual(result, "example.com")
+
+    @patch("src.handlers.base.socket.gethostbyaddr")
+    def test_gethostbyaddr_failure_returns_ip(self, mock_gethostbyaddr):
+        mock_gethostbyaddr.side_effect = OSError("no reverse DNS")
+        result = self.handler._gethostbyaddr("1.2.3.4")
+        self.assertEqual(result, "1.2.3.4")
 
 
 if __name__ == "__main__":
