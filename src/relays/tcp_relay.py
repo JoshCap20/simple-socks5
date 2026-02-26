@@ -98,8 +98,8 @@ class TCPRelay(BaseRelay):
             logger.exception(f"Broken Pipe: {e}")
         except ConnectionResetError as e:
             logger.exception(f"Connection Reset: {e}")
-        except Exception as e:
-            logger.exception(f"Unknown Exception: {e}")
+        except OSError as e:
+            logger.exception(f"Socket error during relay: {e}")
         finally:
             self._cleanup()
 
@@ -150,14 +150,14 @@ class TCPRelay(BaseRelay):
             return sock.send(data)
         except socket.error as e:
             logger.error(f"Error sending data: {e}")
-            raise e
+            raise
 
     def _recv_data(self, sock: socket.socket) -> bytes:
         try:
             return sock.recv(RELAY_BUFFER_SIZE)
         except socket.error as e:
             logger.error(f"Error receiving data: {e}")
-            raise e
+            raise
 
     def _cleanup(self) -> None:
         self._log_connection_closed()
