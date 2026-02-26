@@ -1,4 +1,5 @@
 import logging
+import threading
 from logging.handlers import RotatingFileHandler
 
 from .config import ProxyConfiguration
@@ -30,20 +31,22 @@ class ColorFormatter(logging.Formatter):
 
 
 _loggers = {}
+_logger_lock = threading.Lock()
 
 
 def get_logger(name: str) -> logging.Logger:
-    if name not in _loggers:
-        logger = logging.getLogger(name)
+    with _logger_lock:
+        if name not in _loggers:
+            logger = logging.getLogger(name)
 
-        if ProxyConfiguration.is_initialized():
-            configure_logger(logger)
-        else:
-            logger.addHandler(logging.NullHandler())
+            if ProxyConfiguration.is_initialized():
+                configure_logger(logger)
+            else:
+                logger.addHandler(logging.NullHandler())
 
-        _loggers[name] = logger
+            _loggers[name] = logger
 
-    return _loggers[name]
+        return _loggers[name]
 
 
 def configure_logger(logger: logging.Logger) -> None:
