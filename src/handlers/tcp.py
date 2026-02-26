@@ -2,7 +2,7 @@ import struct
 import socket
 
 from .base import BaseHandler
-from ..constants import SOCKS_VERSION, MethodCodes, USERNAME, PASSWORD, AUTH_TIMEOUT
+from ..constants import SOCKS_VERSION, MethodCodes, USERNAME, PASSWORD, AUTH_TIMEOUT, AUTH_REQUIRED
 from ..exceptions import InvalidVersionError
 from ..logger import get_logger
 from ..utils import generate_connection_method_response
@@ -102,10 +102,9 @@ class TCPHandler(BaseHandler):
         """
         client_methods = {method for method in methods}
 
-        supported_methods = {
-            MethodCodes.NO_AUTHENTICATION_REQUIRED.value,
-            MethodCodes.USERNAME_PASSWORD.value,
-        }
+        supported_methods = {MethodCodes.USERNAME_PASSWORD.value}
+        if not AUTH_REQUIRED:
+            supported_methods.add(MethodCodes.NO_AUTHENTICATION_REQUIRED.value)
 
         mutual_method = client_methods.intersection(supported_methods)
 

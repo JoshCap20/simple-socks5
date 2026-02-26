@@ -309,5 +309,35 @@ class TestTCPRequestHandlerIPv4(unittest.TestCase):
         self.assertEqual(atyp, AddressTypeCodes.IPv4.value)
 
 
+class TestAuthEnforcement(unittest.TestCase):
+    def setUp(self):
+        self.connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.handler = TCPHandler(self.connection)
+
+    def tearDown(self):
+        self.connection.close()
+
+    @patch("src.handlers.tcp.AUTH_REQUIRED", True)
+    def test_auth_required_rejects_no_auth_only_client(self):
+        """When AUTH_REQUIRED is True, a client offering only NO_AUTH should be rejected."""
+        methods = b"\x00"
+        result = self.handler._negotiate_authentication_method(methods)
+        self.assertEqual(result, MethodCodes.NO_ACCEPTABLE_METHODS)
+
+    @patch("src.handlers.tcp.AUTH_REQUIRED", True)
+    def test_auth_required_accepts_username_password(self):
+        """When AUTH_REQUIRED is True, USERNAME_PASSWORD should still be accepted."""
+        methods = b"\x00\x02"
+        result = self.handler._negotiate_authentication_method(methods)
+        self.assertEqual(result, MethodCodes.USERNAME_PASSWORD)
+
+    @patch("src.handlers.tcp.AUTH_REQUIRED", False)
+    def test_default_allows_no_auth(self):
+        """Default behavior (AUTH_REQUIRED=False) should allow NO_AUTH."""
+        methods = b"\x00"
+        result = self.handler._negotiate_authentication_method(methods)
+        self.assertEqual(result, MethodCodes.NO_AUTHENTICATION_REQUIRED)
+
+
 if __name__ == "__main__":
     unittest.main()

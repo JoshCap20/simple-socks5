@@ -5,6 +5,7 @@ SOCKS_VERSION: int = 5
 
 USERNAME: str = os.environ.get("SOCKS5_USERNAME", "myusername")
 PASSWORD: str = os.environ.get("SOCKS5_PASSWORD", "mypassword")
+AUTH_REQUIRED: bool = os.environ.get("SOCKS5_AUTH_REQUIRED", "false").lower() == "true"
 
 # Buffer and timeout constants
 RELAY_BUFFER_SIZE: int = 4096
