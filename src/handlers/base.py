@@ -22,6 +22,16 @@ class BaseHandler:
         """
         self.connection = connection
 
+    def _recv_exact(self, n: int) -> bytes:
+        """Receive exactly n bytes from the connection, handling partial reads."""
+        data = b""
+        while len(data) < n:
+            chunk = self.connection.recv(n - len(data))
+            if not chunk:
+                raise ConnectionError("Connection closed during recv")
+            data += chunk
+        return data
+
     def handle_request(self) -> bool:
         """
         Implemented in TCP and UDP request handlers.
@@ -56,9 +66,7 @@ class BaseHandler:
             connection (socket.socket): The client socket.
         """
         try:
-            header = self.connection.recv(4)
-            if len(header) < 4:
-                raise InvalidRequestError(header)
+            header = self._recv_exact(4)
 
             version, cmd, _, address_type = struct.unpack("!BBBB", header)
             if version != SOCKS_VERSION:
@@ -70,27 +78,27 @@ class BaseHandler:
 
         except socket.error as e:
             logger.exception(f"Socket error during request parsing: {e}")
-            raise socket.error(e)
+            raise
 
     def _parse_address(self, address_type: int) -> DetailedAddress:
         try:
             if address_type == AddressTypeCodes.IPv4.value:
-                address: str = socket.inet_ntoa(self.connection.recv(4))
+                address: str = socket.inet_ntoa(self._recv_exact(4))
                 domain_name: str = self._gethostbyaddr(address)
             elif address_type == AddressTypeCodes.DOMAIN_NAME.value:
-                domain_length = self.connection.recv(1)[0]
-                domain_name = self.connection.recv(domain_length).decode()  # type: ignore
+                domain_length = self._recv_exact(1)[0]
+                domain_name = self._recv_exact(domain_length).decode()
                 address: str = self._gethostbyname(domain_name)
                 address_type = AddressTypeCodes.IPv4.value
             elif address_type == AddressTypeCodes.IPv6.value:
                 address: str = socket.inet_ntop(
-                    socket.AF_INET6, self.connection.recv(16)
+                    socket.AF_INET6, self._recv_exact(16)
                 )
                 domain_name: str = self._gethostbyaddr(address)
             else:
                 raise InvalidRequestError(address_type)
 
-            port: int = struct.unpack("!H", self.connection.recv(2))[0]
+            port: int = struct.unpack("!H", self._recv_exact(2))[0]
             return DetailedAddress(
                 name=str(domain_name),
                 ip=address,
@@ -100,7 +108,7 @@ class BaseHandler:
 
         except socket.error as e:
             logger.exception(f"Socket error during address and port parsing: {e}")
-            raise socket.error(e)
+            raise
 
     def _gethostbyaddr(self, ip: str) -> str:
         try:

@@ -136,9 +136,9 @@ class TestTCPRequestHandlerIPv4(unittest.TestCase):
     def test_handle_username_password_auth__invalid(self, mock_sendall, mock_recv):
         mock_recv.side_effect = [
             b"\x01",
-            b"\x08",
+            bytes([len("myusername")]),
             b"myusername",
-            b"\x08",
+            bytes([len("eh")]),
             b"eh",
         ]
         result = self.handler._handle_username_password_auth()
