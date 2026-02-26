@@ -29,7 +29,9 @@ class TestErrorUtils(unittest.TestCase):
     def test_generate_general_socks_server_failure_reply__ipv6(self):
         address_type = AddressTypeCodes.IPv6
         expected_reply = generate_general_socks_server_failure_reply(address_type)
-        self.assertEqual(expected_reply, b"\x05\x01\x00\x04\x00\x00\x00\x00\x00\x00")
+        # ATYP=0x04 means 16-byte IPv6 address field + 2-byte port
+        expected = b"\x05\x01\x00\x04" + b"\x00" * 16 + b"\x00\x00"
+        self.assertEqual(expected_reply, expected)
 
     def test_generate_general_socks_server_failure_reply__domain_name(self):
         address_type = AddressTypeCodes.DOMAIN_NAME
@@ -44,7 +46,8 @@ class TestErrorUtils(unittest.TestCase):
     def test_generate_connection_refused_reply__ipv6(self):
         address_type = AddressTypeCodes.IPv6
         expected_reply = generate_connection_refused_reply(address_type)
-        self.assertEqual(expected_reply, b"\x05\x05\x00\x04\x00\x00\x00\x00\x00\x00")
+        expected = b"\x05\x05\x00\x04" + b"\x00" * 16 + b"\x00\x00"
+        self.assertEqual(expected_reply, expected)
 
     def test_generate_connection_refused_reply__domain_name(self):
         address_type = AddressTypeCodes.DOMAIN_NAME
@@ -59,7 +62,8 @@ class TestErrorUtils(unittest.TestCase):
     def test_generate_network_unreachable_reply__ipv6(self):
         address_type = AddressTypeCodes.IPv6
         expected_reply = generate_network_unreachable_reply(address_type)
-        self.assertEqual(expected_reply, b"\x05\x03\x00\x04\x00\x00\x00\x00\x00\x00")
+        expected = b"\x05\x03\x00\x04" + b"\x00" * 16 + b"\x00\x00"
+        self.assertEqual(expected_reply, expected)
 
     def test_generate_network_unreachable_reply__domain_name(self):
         address_type = AddressTypeCodes.DOMAIN_NAME
@@ -74,7 +78,8 @@ class TestErrorUtils(unittest.TestCase):
     def test_generate_host_unreachable_reply__ipv6(self):
         address_type = AddressTypeCodes.IPv6
         expected_reply = generate_host_unreachable_reply(address_type)
-        self.assertEqual(expected_reply, b"\x05\x04\x00\x04\x00\x00\x00\x00\x00\x00")
+        expected = b"\x05\x04\x00\x04" + b"\x00" * 16 + b"\x00\x00"
+        self.assertEqual(expected_reply, expected)
 
     def test_generate_host_unreachable_reply__domain_name(self):
         address_type = AddressTypeCodes.DOMAIN_NAME
@@ -89,7 +94,8 @@ class TestErrorUtils(unittest.TestCase):
     def test_generate_address_type_not_supported_reply__ipv6(self):
         address_type = AddressTypeCodes.IPv6
         expected_reply = generate_address_type_not_supported_reply(address_type)
-        self.assertEqual(expected_reply, b"\x05\x08\x00\x04\x00\x00\x00\x00\x00\x00")
+        expected = b"\x05\x08\x00\x04" + b"\x00" * 16 + b"\x00\x00"
+        self.assertEqual(expected_reply, expected)
 
     def test_generate_address_type_not_supported_reply__domain_name(self):
         address_type = AddressTypeCodes.DOMAIN_NAME
@@ -104,7 +110,8 @@ class TestErrorUtils(unittest.TestCase):
     def test_generate_connection_not_allowed_by_ruleset_reply__ipv6(self):
         address_type = AddressTypeCodes.IPv6
         expected_reply = generate_connection_not_allowed_by_ruleset_reply(address_type)
-        self.assertEqual(expected_reply, b"\x05\x02\x00\x04\x00\x00\x00\x00\x00\x00")
+        expected = b"\x05\x02\x00\x04" + b"\x00" * 16 + b"\x00\x00"
+        self.assertEqual(expected_reply, expected)
 
     def test_generate_connection_not_allowed_by_ruleset_reply__domain_name(self):
         address_type = AddressTypeCodes.DOMAIN_NAME
@@ -119,7 +126,8 @@ class TestErrorUtils(unittest.TestCase):
     def test_generate_ttl_expired_reply__ipv6(self):
         address_type = AddressTypeCodes.IPv6
         expected_reply = generate_ttl_expired_reply(address_type)
-        self.assertEqual(expected_reply, b"\x05\x06\x00\x04\x00\x00\x00\x00\x00\x00")
+        expected = b"\x05\x06\x00\x04" + b"\x00" * 16 + b"\x00\x00"
+        self.assertEqual(expected_reply, expected)
 
     def test_generate_ttl_expired_reply__domain_name(self):
         address_type = AddressTypeCodes.DOMAIN_NAME
@@ -134,7 +142,8 @@ class TestErrorUtils(unittest.TestCase):
     def test_generate_command_not_supported_reply__ipv6(self):
         address_type = AddressTypeCodes.IPv6
         expected_reply = generate_command_not_supported_reply(address_type)
-        self.assertEqual(expected_reply, b"\x05\x07\x00\x04\x00\x00\x00\x00\x00\x00")
+        expected = b"\x05\x07\x00\x04" + b"\x00" * 16 + b"\x00\x00"
+        self.assertEqual(expected_reply, expected)
 
 
 class TestAddressToBytesUtils(unittest.TestCase):
@@ -274,6 +283,19 @@ class TestSuccessUtils(unittest.TestCase):
             expected_reply,
             b"\x05\x00\x00\x01\x7f\x00\x00\x01\x00\x50",
         )
+
+    def test_generate_succeeded_reply__ipv6(self):
+        address_type = AddressTypeCodes.IPv6
+        ip = "2001:0db8:85a3:0000:0000:8a2e:0370:7334"
+        port = 443
+        expected_reply = generate_succeeded_reply(address_type, ip, port)
+        # VER=05, REP=00, RSV=00, ATYP=04, then 16-byte IPv6 addr, then port
+        expected = (
+            b"\x05\x00\x00\x04"
+            b"\x20\x01\x0d\xb8\x85\xa3\x00\x00\x00\x00\x8a\x2e\x03\x70\x73\x34"
+            b"\x01\xbb"
+        )
+        self.assertEqual(expected_reply, expected)
 
 
 class TestGenerateSocketUtils(unittest.TestCase):

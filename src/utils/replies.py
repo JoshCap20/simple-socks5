@@ -63,26 +63,26 @@ def generate_failed_reply(
 ) -> bytes:
     if address_type == AddressTypeCodes.DOMAIN_NAME:
         raise ValueError("Address type not suitable for failed reply")
-    return struct.pack(
-        "!BBBBIH", SOCKS_VERSION, error_number.value, 0, address_type.value, 0, 0
+    header = struct.pack(
+        "!BBBB", SOCKS_VERSION, error_number.value, 0, address_type.value
     )
+    if address_type == AddressTypeCodes.IPv6:
+        addr_bytes = b"\x00" * 16
+    else:
+        addr_bytes = b"\x00" * 4
+    port = struct.pack("!H", 0)
+    return header + addr_bytes + port
 
 
 def generate_succeeded_reply(
     address_type: AddressTypeCodes, ip: str, port: int
 ) -> bytes:
     addr_bytes: bytes = map_address_to_bytes(address_type, ip)
-    address_field: int = int.from_bytes(addr_bytes, byteorder="big")
-
-    return struct.pack(
-        "!BBBBIH",
-        SOCKS_VERSION,
-        ReplyCodes.SUCCEEDED.value,
-        0,
-        address_type.value,
-        address_field,
-        port,
+    header = struct.pack(
+        "!BBBB", SOCKS_VERSION, ReplyCodes.SUCCEEDED.value, 0, address_type.value
     )
+    port_bytes = struct.pack("!H", port)
+    return header + addr_bytes + port_bytes
 
 
 def generate_connection_method_response(method: MethodCodes) -> bytes:
