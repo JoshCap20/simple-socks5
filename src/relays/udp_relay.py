@@ -92,11 +92,12 @@ class UDPRelay(BaseRelay):
                 header = UDPHandler.build_udp_response_header(
                     remote_addr[0], remote_addr[1]
                 )
-                self.proxy_connection.sendto(header + response, client_addr)
+                encapsulated = header + response
+                self.proxy_connection.sendto(encapsulated, client_addr)
                 self._log_relay(
                     BaseAddress(datagram.dst_addr, datagram.dst_port),
                     BaseAddress(client_addr[0], client_addr[1]),
-                    len(response),
+                    len(encapsulated),
                 )
             except socket.timeout:
                 logger.debug(
