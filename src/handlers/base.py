@@ -25,13 +25,15 @@ class BaseHandler:
 
     def _recv_exact(self, n: int) -> bytes:
         """Receive exactly n bytes from the connection, handling partial reads."""
-        data = b""
-        while len(data) < n:
-            chunk = self.connection.recv(n - len(data))
+        buf = bytearray(n)
+        pos = 0
+        while pos < n:
+            chunk = self.connection.recv(n - pos)
             if not chunk:
                 raise ConnectionError("Connection closed during recv")
-            data += chunk
-        return data
+            buf[pos:pos + len(chunk)] = chunk
+            pos += len(chunk)
+        return bytes(buf)
 
     def handle_request(self) -> bool:
         """
