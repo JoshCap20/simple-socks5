@@ -1,3 +1,5 @@
+import time
+import threading
 import unittest
 from unittest.mock import MagicMock, patch
 import struct
@@ -224,6 +226,19 @@ class TestTCPRequestHandlerIPv4(unittest.TestCase):
         mock_gethostbyaddr.side_effect = OSError("no reverse DNS")
         result = self.handler._gethostbyaddr("1.2.3.4")
         self.assertEqual(result, "1.2.3.4")
+
+    @patch("src.handlers.base.DNS_REVERSE_LOOKUP_TIMEOUT", 0.1)
+    @patch("src.handlers.base.socket.gethostbyaddr")
+    def test_gethostbyaddr_timeout_returns_ip(self, mock_gethostbyaddr):
+        """Reverse DNS should return the IP if the lookup takes too long."""
+        done = threading.Event()
+        def slow_lookup(ip):
+            done.wait(timeout=5)
+            return ("example.com", [], [ip])
+        mock_gethostbyaddr.side_effect = slow_lookup
+        result = self.handler._gethostbyaddr("1.2.3.4")
+        self.assertEqual(result, "1.2.3.4")
+        done.set()  # unblock background thread for clean shutdown
 
 
 if __name__ == "__main__":

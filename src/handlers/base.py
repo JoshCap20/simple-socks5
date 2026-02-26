@@ -1,7 +1,8 @@
 import struct
 import socket
+from concurrent.futures import ThreadPoolExecutor, TimeoutError
 
-from ..constants import SOCKS_VERSION, AddressTypeCodes
+from ..constants import SOCKS_VERSION, AddressTypeCodes, DNS_REVERSE_LOOKUP_TIMEOUT
 from ..exceptions import InvalidRequestError, InvalidVersionError
 from ..logger import get_logger
 from ..models import DetailedAddress, Request
@@ -111,13 +112,20 @@ class BaseHandler:
             raise
 
     def _gethostbyaddr(self, ip: str) -> str:
+        executor = ThreadPoolExecutor(max_workers=1)
         try:
-            return socket.gethostbyaddr(ip)[0]
+            future = executor.submit(socket.gethostbyaddr, ip)
+            return future.result(timeout=DNS_REVERSE_LOOKUP_TIMEOUT)[0]
+        except TimeoutError:
+            logger.debug(f"Reverse DNS lookup timed out for {ip}")
+            return ip
         except OSError:
             return ip
-        except Exception as e:
+        except Exception:
             logger.exception("Error setting hostname")
             return ip
+        finally:
+            executor.shutdown(wait=False)
 
     def _gethostbyname(self, name: str) -> str:
         try:

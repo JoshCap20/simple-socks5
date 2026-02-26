@@ -11,6 +11,7 @@ RELAY_BUFFER_SIZE: int = 4096
 TCP_SELECTOR_TIMEOUT: int = 3  # seconds
 AUTH_TIMEOUT: float = 45.0  # seconds
 LOG_FILE_MAX_BYTES: int = 1048576  # 1 MB
+DNS_REVERSE_LOOKUP_TIMEOUT: float = 2.0  # seconds
 
 # See https://www.ietf.org/rfc/rfc1928.txt for more information about the below codes
 
