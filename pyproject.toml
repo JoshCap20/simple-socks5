@@ -2,7 +2,7 @@
 name = "simple-socks5"
 version = "0.2.1"
 description = "A Python SOCKS Protocol Version 5 proxy server"
-requires-python = ">=3.7"
+requires-python = ">=3.10"
 license = "MIT"
 
 [tool.pytest.ini_options]

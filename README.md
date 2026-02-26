@@ -1,51 +1,94 @@
-## Simple Socks Proxy Server
+# Simple SOCKS5 Proxy Server
 
-### Introduction
+[![Python Tests](https://github.com/JoshCap20/simple-socks5/actions/workflows/python-tests.yml/badge.svg)](https://github.com/JoshCap20/simple-socks5/actions/workflows/python-tests.yml)
+[![Docker Image CI](https://github.com/JoshCap20/simple-socks5/actions/workflows/docker-image.yml/badge.svg)](https://github.com/JoshCap20/simple-socks5/actions/workflows/docker-image.yml)
 
-This is a simple SOCKS Protocol Version 5 server written in Python. It is based on the SOCKS V5 protocol described in [RFC1928](https://www.ietf.org/rfc/rfc1928.txt) and [RFC1929](https://www.ietf.org/rfc/rfc1929.txt).
+A SOCKS Protocol Version 5 proxy server written in Python. Implements [RFC 1928](https://www.ietf.org/rfc/rfc1928.txt) (SOCKS5) and [RFC 1929](https://www.ietf.org/rfc/rfc1929.txt) (username/password authentication).
 
-### Features
+## Features
 
-- **Concurrent Connections**: Supports multiple simultaneous client connections.
-- **Performance Optimized**: Efficient handling of large data transfers.
-- **Protocol Compliance**: Fully compliant with RFC1928 and RFC1929 for basic functionalities.
+- **TCP & UDP**: Supports CONNECT and UDP ASSOCIATE commands
+- **Authentication**: Optional username/password authentication (RFC 1929)
+- **IPv4 & IPv6**: Full support for both address families
+- **Concurrent**: Thread-per-connection with configurable connection limits
+- **Docker**: Multi-architecture images on [Docker Hub](https://hub.docker.com/r/jcaponigro20/simple-socks5)
 
-### Docker Image
+## Requirements
 
-A Docker image is available on [Docker Hub](https://hub.docker.com/r/jcaponigro20/simple-socks5).
+- Python 3.10+
+- No external dependencies (stdlib only)
 
-### Requirements
+## Quick Start
 
-- Python 3.7 or above (earlier verions may work but are not tested).
-- Only standard Python libraries are used. No additional dependencies are required.
+```bash
+# Run directly
+python3 app.py -H 0.0.0.0 -P 1080 -L debug
 
-### Usage
+# Or with Docker
+docker run -p 1080:1080 jcaponigro20/simple-socks5
+```
+
+## Usage
 
 ```bash
 python3 app.py [--host HOST | -H HOST] [--port PORT | -P PORT] [--logging-level LEVEL | -L LEVEL]
 ```
 
-- `--host HOST` or `-H HOST`: The host address to bind to. Default is `localhost`. Use `0.0.0.0` to bind to all available interfaces.
-- `--port PORT` or `-P PORT`: The port number to bind to. Default is `9999`.
-- `--logging-level LEVEL` or `-L LEVEL`: Set the logging level for the application. Default is `debug`. Choices: ["disabled", "debug", "info", "warning", "error", "critical"]
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-H`, `--host` | `localhost` | Bind address. Use `0.0.0.0` for all interfaces. |
+| `-P`, `--port` | `9999` | Bind port. |
+| `-L`, `--logging-level` | `debug` | `disabled`, `debug`, `info`, `warning`, `error`, `critical` |
 
-### RFC 1928 & RFC 1929 Compliance
+## Docker
 
-#### Covered Aspects
+```bash
+# Default (logging enabled)
+docker run -p 1080:1080 jcaponigro20/simple-socks5
 
-- Connections: Supports both TCP and UDP-based client applications.
-- Authentication: Supports username/password authentication method (RFC 1929), including failure handling.
-- Connection Requests: Handles SOCKS5 connection requests including parsing and responding to the VER, CMD, RSV, ATYP, DST.ADDR, and DST.PORT fields.
-- Address Types: Supports IPv4, IPv6 and domain name address types.
-- Reply Handling: Generates replies to the SOCKS5 requests based on different scenarios (success, general SOCKS server failure, connection refused, etc.).
+# Logging disabled
+docker run -p 1080:1080 jcaponigro20/simple-socks5:logging-disabled
 
-#### Not Covered Aspects
+# Custom build
+docker build --build-arg LOGGING_LEVEL=info -t my-socks5 .
+```
 
-- BIND Command: Although the BIND command is recognized, it's not supported in the current implementation.
-- Fragmentation in UDP: The current implementation does not support fragmentation in UDP.
-- GSSAPI Authentication: The GSSAPI authentication method (RFC 1961) is not implemented.
+## Authentication
 
-#### Security Considerations
+Set credentials via environment variables (defaults: `myusername`/`mypassword`):
 
-- Data Encryption: The current implementation does not include data encryption for the transmission of data through the proxy. Data, including username and password for authentication, is transmitted in cleartext.
-- Recommendation for Secure Environments: Additional security measures are recommended for use in environments where data interception is a risk.
+```bash
+export SOCKS5_USERNAME=admin
+export SOCKS5_PASSWORD=secret
+python3 app.py -H 0.0.0.0 -P 1080
+```
+
+## Testing
+
+```bash
+python3 -m venv .venv && source .venv/bin/activate
+pip install pytest pytest-cov flake8
+pytest --cov=src --cov-fail-under=60
+flake8 src/ tests/
+```
+
+## RFC Compliance
+
+### Implemented
+
+- SOCKS5 handshake and connection negotiation
+- CONNECT command (TCP proxying)
+- UDP ASSOCIATE command (UDP relaying)
+- Username/password authentication (RFC 1929)
+- IPv4, IPv6, and domain name address types
+- All standard reply codes (success, server failure, connection refused, host unreachable, etc.)
+
+### Not Implemented
+
+- BIND command (recognized but returns "command not supported")
+- UDP fragmentation (fragmented datagrams are dropped)
+- GSSAPI authentication (RFC 1961)
+
+## Security Considerations
+
+Data is transmitted in cleartext, including authentication credentials. Use additional encryption (e.g., SSH tunnel, VPN) in environments where interception is a risk.
