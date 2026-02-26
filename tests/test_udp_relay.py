@@ -4,6 +4,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from src.constants import AddressTypeCodes
+from src.handlers.udp import UDPHandler
 from src.models import DetailedAddress
 from src.relays.udp_relay import UDPRelay
 
@@ -24,7 +25,6 @@ def build_udp_datagram(dst_addr: str, dst_port: int, data: bytes, frag: int = 0,
 
 class TestBuildUDPResponseHeader(unittest.TestCase):
     def test_ipv4_response_header(self):
-        from src.handlers.udp import UDPHandler
         header = UDPHandler.build_udp_response_header("10.0.0.1", 53)
         # RSV(2) + FRAG(1) + ATYP(1) + IPv4(4) + PORT(2) = 10 bytes
         expected = b"\x00\x00\x00\x01" + socket.inet_aton("10.0.0.1") + struct.pack("!H", 53)
