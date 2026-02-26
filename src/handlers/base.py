@@ -130,7 +130,7 @@ class BaseHandler:
             return ip
         if error[0] is not None:
             if not isinstance(error[0], OSError):
-                logger.exception("Error setting hostname")
+                logger.error("Error setting hostname", exc_info=error[0])
             return ip
         return result[0] if result[0] is not None else ip
 
@@ -153,6 +153,6 @@ class BaseHandler:
             return name
         if error[0] is not None:
             if not isinstance(error[0], OSError):
-                logger.exception("Error setting hostname")
+                logger.error("Error setting hostname", exc_info=error[0])
             return name
         return result[0] if result[0] is not None else name
