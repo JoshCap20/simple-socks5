@@ -62,7 +62,7 @@ def generate_failed_reply(
     address_type: AddressTypeCodes, error_number: ReplyCodes
 ) -> bytes:
     if address_type == AddressTypeCodes.DOMAIN_NAME:
-        raise ValueError("Address type not suitable for failed reply")
+        address_type = AddressTypeCodes.IPv4
     header = struct.pack(
         "!BBBB", SOCKS_VERSION, error_number.value, 0, address_type.value
     )

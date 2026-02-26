@@ -34,9 +34,8 @@ class TestErrorUtils(unittest.TestCase):
         self.assertEqual(expected_reply, expected)
 
     def test_generate_general_socks_server_failure_reply__domain_name(self):
-        address_type = AddressTypeCodes.DOMAIN_NAME
-        with self.assertRaises(ValueError):
-            generate_general_socks_server_failure_reply(address_type)
+        result = generate_general_socks_server_failure_reply(AddressTypeCodes.DOMAIN_NAME)
+        self.assertEqual(result, b"\x05\x01\x00\x01\x00\x00\x00\x00\x00\x00")
 
     def test_generate_connection_refused_reply__ipv4(self):
         address_type = AddressTypeCodes.IPv4
@@ -50,9 +49,8 @@ class TestErrorUtils(unittest.TestCase):
         self.assertEqual(expected_reply, expected)
 
     def test_generate_connection_refused_reply__domain_name(self):
-        address_type = AddressTypeCodes.DOMAIN_NAME
-        with self.assertRaises(ValueError):
-            generate_connection_refused_reply(address_type)
+        result = generate_connection_refused_reply(AddressTypeCodes.DOMAIN_NAME)
+        self.assertEqual(result, b"\x05\x05\x00\x01\x00\x00\x00\x00\x00\x00")
 
     def test_generate_network_unreachable_reply__ipv4(self):
         address_type = AddressTypeCodes.IPv4
@@ -66,9 +64,8 @@ class TestErrorUtils(unittest.TestCase):
         self.assertEqual(expected_reply, expected)
 
     def test_generate_network_unreachable_reply__domain_name(self):
-        address_type = AddressTypeCodes.DOMAIN_NAME
-        with self.assertRaises(ValueError):
-            generate_network_unreachable_reply(address_type)
+        result = generate_network_unreachable_reply(AddressTypeCodes.DOMAIN_NAME)
+        self.assertEqual(result, b"\x05\x03\x00\x01\x00\x00\x00\x00\x00\x00")
 
     def test_generate_host_unreachable_reply__ipv4(self):
         address_type = AddressTypeCodes.IPv4
@@ -82,9 +79,8 @@ class TestErrorUtils(unittest.TestCase):
         self.assertEqual(expected_reply, expected)
 
     def test_generate_host_unreachable_reply__domain_name(self):
-        address_type = AddressTypeCodes.DOMAIN_NAME
-        with self.assertRaises(ValueError):
-            generate_host_unreachable_reply(address_type)
+        result = generate_host_unreachable_reply(AddressTypeCodes.DOMAIN_NAME)
+        self.assertEqual(result, b"\x05\x04\x00\x01\x00\x00\x00\x00\x00\x00")
 
     def test_generate_address_type_not_supported_reply__ipv4(self):
         address_type = AddressTypeCodes.IPv4
@@ -98,9 +94,8 @@ class TestErrorUtils(unittest.TestCase):
         self.assertEqual(expected_reply, expected)
 
     def test_generate_address_type_not_supported_reply__domain_name(self):
-        address_type = AddressTypeCodes.DOMAIN_NAME
-        with self.assertRaises(ValueError):
-            generate_address_type_not_supported_reply(address_type)
+        result = generate_address_type_not_supported_reply(AddressTypeCodes.DOMAIN_NAME)
+        self.assertEqual(result, b"\x05\x08\x00\x01\x00\x00\x00\x00\x00\x00")
 
     def test_generate_connection_not_allowed_by_ruleset_reply__ipv4(self):
         address_type = AddressTypeCodes.IPv4
@@ -114,9 +109,8 @@ class TestErrorUtils(unittest.TestCase):
         self.assertEqual(expected_reply, expected)
 
     def test_generate_connection_not_allowed_by_ruleset_reply__domain_name(self):
-        address_type = AddressTypeCodes.DOMAIN_NAME
-        with self.assertRaises(ValueError):
-            generate_connection_not_allowed_by_ruleset_reply(address_type)
+        result = generate_connection_not_allowed_by_ruleset_reply(AddressTypeCodes.DOMAIN_NAME)
+        self.assertEqual(result, b"\x05\x02\x00\x01\x00\x00\x00\x00\x00\x00")
 
     def test_generate_ttl_expired_reply__ipv4(self):
         address_type = AddressTypeCodes.IPv4
@@ -130,9 +124,8 @@ class TestErrorUtils(unittest.TestCase):
         self.assertEqual(expected_reply, expected)
 
     def test_generate_ttl_expired_reply__domain_name(self):
-        address_type = AddressTypeCodes.DOMAIN_NAME
-        with self.assertRaises(ValueError):
-            generate_ttl_expired_reply(address_type)
+        result = generate_ttl_expired_reply(AddressTypeCodes.DOMAIN_NAME)
+        self.assertEqual(result, b"\x05\x06\x00\x01\x00\x00\x00\x00\x00\x00")
 
     def test_generate_command_not_supported_reply__ipv4(self):
         address_type = AddressTypeCodes.IPv4
