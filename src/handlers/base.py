@@ -89,8 +89,7 @@ class BaseHandler:
             elif address_type == AddressTypeCodes.DOMAIN_NAME.value:
                 domain_length = self._recv_exact(1)[0]
                 domain_name = self._recv_exact(domain_length).decode()
-                address: str = self._gethostbyname(domain_name)
-                address_type = AddressTypeCodes.IPv4.value
+                address, address_type = self._resolve_hostname(domain_name)
             elif address_type == AddressTypeCodes.IPv6.value:
                 address: str = socket.inet_ntop(
                     socket.AF_INET6, self._recv_exact(16)
@@ -134,13 +133,14 @@ class BaseHandler:
             return ip
         return result[0] if result[0] is not None else ip
 
-    def _gethostbyname(self, name: str) -> str:
+    def _resolve_hostname(self, name: str) -> tuple:
+        """Resolve a hostname to (ip, address_type_value) using getaddrinfo for dual-stack support."""
         result = [None]
         error = [None]
 
         def lookup():
             try:
-                result[0] = socket.gethostbyname(name)
+                result[0] = socket.getaddrinfo(name, None, socket.AF_UNSPEC, socket.SOCK_STREAM)
             except Exception as e:
                 error[0] = e
 
@@ -150,9 +150,18 @@ class BaseHandler:
 
         if t.is_alive():
             logger.debug(f"DNS lookup timed out for {name}")
-            return name
+            return name, AddressTypeCodes.IPv4.value
         if error[0] is not None:
             if not isinstance(error[0], OSError):
-                logger.error("Error setting hostname", exc_info=error[0])
-            return name
-        return result[0] if result[0] is not None else name
+                logger.error("Error resolving hostname", exc_info=error[0])
+            return name, AddressTypeCodes.IPv4.value
+        if not result[0]:
+            return name, AddressTypeCodes.IPv4.value
+
+        family, _, _, _, sockaddr = result[0][0]
+        ip = sockaddr[0]
+        if family == socket.AF_INET6:
+            address_type = AddressTypeCodes.IPv6.value
+        else:
+            address_type = AddressTypeCodes.IPv4.value
+        return ip, address_type

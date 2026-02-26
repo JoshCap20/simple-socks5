@@ -177,9 +177,11 @@ class TestTCPRequestHandlerIPv4(unittest.TestCase):
         self.assertEqual(result.address_type, AddressTypeCodes.IPv4)
 
     @patch("socket.socket.recv")
-    @patch("src.handlers.base.socket.gethostbyname")
-    def test_parse_address_domain_name(self, mock_gethostbyname, mock_recv):
-        mock_gethostbyname.return_value = "93.184.216.34"
+    @patch("src.handlers.base.socket.getaddrinfo")
+    def test_parse_address_domain_name_ipv4(self, mock_getaddrinfo, mock_recv):
+        mock_getaddrinfo.return_value = [
+            (socket.AF_INET, socket.SOCK_STREAM, 0, "", ("93.184.216.34", 0)),
+        ]
         domain = "example.com"
         mock_recv.side_effect = [
             bytes([len(domain)]),
@@ -190,8 +192,25 @@ class TestTCPRequestHandlerIPv4(unittest.TestCase):
         self.assertEqual(result.ip, "93.184.216.34")
         self.assertEqual(result.port, 80)
         self.assertEqual(result.name, domain)
-        # Domain names get resolved to IPv4
         self.assertEqual(result.address_type, AddressTypeCodes.IPv4)
+
+    @patch("socket.socket.recv")
+    @patch("src.handlers.base.socket.getaddrinfo")
+    def test_parse_address_domain_name_ipv6(self, mock_getaddrinfo, mock_recv):
+        mock_getaddrinfo.return_value = [
+            (socket.AF_INET6, socket.SOCK_STREAM, 0, "", ("2606:4700::6812:1a78", 0, 0, 0)),
+        ]
+        domain = "ipv6only.example.com"
+        mock_recv.side_effect = [
+            bytes([len(domain)]),
+            domain.encode(),
+            struct.pack("!H", 443),
+        ]
+        result = self.handler._parse_address(AddressTypeCodes.DOMAIN_NAME.value)
+        self.assertEqual(result.ip, "2606:4700::6812:1a78")
+        self.assertEqual(result.port, 443)
+        self.assertEqual(result.name, domain)
+        self.assertEqual(result.address_type, AddressTypeCodes.IPv6)
 
     @patch("socket.socket.recv")
     @patch("src.handlers.base.socket.gethostbyaddr")
@@ -249,31 +268,45 @@ class TestTCPRequestHandlerIPv4(unittest.TestCase):
         done.set()
 
     @patch("src.handlers.base.DNS_REVERSE_LOOKUP_TIMEOUT", 0.1)
-    @patch("src.handlers.base.socket.gethostbyname")
-    def test_gethostbyname_timeout_returns_name(self, mock_gethostbyname):
-        """Forward DNS should return the name if the lookup takes too long."""
+    @patch("src.handlers.base.socket.getaddrinfo")
+    def test_resolve_hostname_timeout_returns_name(self, mock_getaddrinfo):
+        """Forward DNS should return the name with IPv4 default if the lookup takes too long."""
         done = threading.Event()
 
-        def slow_lookup(name):
+        def slow_lookup(*args, **kwargs):
             done.wait(timeout=5)
-            return "93.184.216.34"
+            return [(socket.AF_INET, socket.SOCK_STREAM, 0, "", ("93.184.216.34", 0))]
 
-        mock_gethostbyname.side_effect = slow_lookup
-        result = self.handler._gethostbyname("example.com")
-        self.assertEqual(result, "example.com")
+        mock_getaddrinfo.side_effect = slow_lookup
+        ip, atyp = self.handler._resolve_hostname("example.com")
+        self.assertEqual(ip, "example.com")
+        self.assertEqual(atyp, AddressTypeCodes.IPv4.value)
         done.set()
 
-    @patch("src.handlers.base.socket.gethostbyname")
-    def test_gethostbyname_success(self, mock_gethostbyname):
-        mock_gethostbyname.return_value = "93.184.216.34"
-        result = self.handler._gethostbyname("example.com")
-        self.assertEqual(result, "93.184.216.34")
+    @patch("src.handlers.base.socket.getaddrinfo")
+    def test_resolve_hostname_ipv4(self, mock_getaddrinfo):
+        mock_getaddrinfo.return_value = [
+            (socket.AF_INET, socket.SOCK_STREAM, 0, "", ("93.184.216.34", 0)),
+        ]
+        ip, atyp = self.handler._resolve_hostname("example.com")
+        self.assertEqual(ip, "93.184.216.34")
+        self.assertEqual(atyp, AddressTypeCodes.IPv4.value)
 
-    @patch("src.handlers.base.socket.gethostbyname")
-    def test_gethostbyname_failure_returns_name(self, mock_gethostbyname):
-        mock_gethostbyname.side_effect = OSError("no DNS")
-        result = self.handler._gethostbyname("example.com")
-        self.assertEqual(result, "example.com")
+    @patch("src.handlers.base.socket.getaddrinfo")
+    def test_resolve_hostname_ipv6(self, mock_getaddrinfo):
+        mock_getaddrinfo.return_value = [
+            (socket.AF_INET6, socket.SOCK_STREAM, 0, "", ("2606:4700::6812:1a78", 0, 0, 0)),
+        ]
+        ip, atyp = self.handler._resolve_hostname("example.com")
+        self.assertEqual(ip, "2606:4700::6812:1a78")
+        self.assertEqual(atyp, AddressTypeCodes.IPv6.value)
+
+    @patch("src.handlers.base.socket.getaddrinfo")
+    def test_resolve_hostname_failure_returns_name(self, mock_getaddrinfo):
+        mock_getaddrinfo.side_effect = OSError("no DNS")
+        ip, atyp = self.handler._resolve_hostname("example.com")
+        self.assertEqual(ip, "example.com")
+        self.assertEqual(atyp, AddressTypeCodes.IPv4.value)
 
 
 if __name__ == "__main__":
