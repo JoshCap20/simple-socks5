@@ -156,6 +156,35 @@ class TestUDPRelay(unittest.TestCase):
         # Should not raise — error should be handled gracefully
         relay.listen_and_relay()
 
+    @patch("src.relays.udp_relay.generate_udp_socket")
+    def test_listen_and_relay_drops_wrong_source_ip(self, mock_gen_socket):
+        """RFC 1928 Section 7: drop datagrams from IPs other than the client."""
+        mock_proxy_sock = MagicMock()
+        mock_proxy_sock.getsockname.return_value = ("0.0.0.0", 5000)
+        mock_gen_socket.return_value = mock_proxy_sock
+
+        client_conn = MagicMock()
+        client_conn.getpeername.return_value = ("127.0.0.1", 1234)
+        dst = DetailedAddress(
+            name="test", ip="1.2.3.4", port=80,
+            address_type=AddressTypeCodes.IPv4,
+        )
+        relay = UDPRelay(client_conn, dst)
+
+        # Build a valid datagram but from wrong source IP
+        datagram = build_udp_datagram("10.0.0.1", 53, b"injected")
+        wrong_addr = ("192.168.1.99", 5555)
+
+        mock_proxy_sock.recvfrom.side_effect = [
+            (datagram, wrong_addr),
+            socket.timeout("done"),
+        ]
+
+        with patch("src.relays.udp_relay.socket.socket") as mock_socket_cls:
+            relay.listen_and_relay()
+            # Should NOT have forwarded the packet from wrong source
+            mock_socket_cls.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()

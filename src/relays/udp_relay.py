@@ -21,6 +21,7 @@ class UDPRelay(BaseRelay):
 
     def __init__(self, client_connection: socket.socket, dst_address: DetailedAddress):
         super().__init__(client_connection, dst_address)
+        self.expected_client_ip = client_connection.getpeername()[0]
         self.generate_proxy_connection()
 
     def generate_proxy_connection(self) -> None:
@@ -38,6 +39,12 @@ class UDPRelay(BaseRelay):
         try:
             while True:
                 data, addr = self.proxy_connection.recvfrom(RELAY_BUFFER_SIZE)
+
+                if addr[0] != self.expected_client_ip:
+                    logger.debug(
+                        f"(UDP) Dropped datagram from unauthorized source: {addr[0]}"
+                    )
+                    continue
 
                 datagram = UDPHandler.parse_udp_datagram(data)
 
