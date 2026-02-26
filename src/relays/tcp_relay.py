@@ -94,12 +94,12 @@ class TCPRelay(BaseRelay):
                         self._log_relay(sock_info, other_info, sent)
                         data = data[sent:]
 
-        except BrokenPipeError as e:
-            logger.exception(f"Broken Pipe: {e}")
-        except ConnectionResetError as e:
-            logger.exception(f"Connection Reset: {e}")
-        except OSError as e:
-            logger.exception(f"Socket error during relay: {e}")
+        except BrokenPipeError:
+            logger.exception("Broken Pipe")
+        except ConnectionResetError:
+            logger.exception("Connection Reset")
+        except OSError:
+            logger.exception("Socket error during relay")
         finally:
             self._cleanup()
 
@@ -161,19 +161,21 @@ class TCPRelay(BaseRelay):
 
     def _cleanup(self) -> None:
         self._log_connection_closed()
+        # Unregister both sockets from the selector
         for sock in [self.client_connection, self.proxy_connection]:
             try:
                 self.selector.unregister(sock)
             except (OSError, ValueError):
                 pass
-            try:
-                sock.shutdown(socket.SHUT_RDWR)
-            except OSError:
-                pass
-            try:
-                sock.close()
-            except OSError:
-                pass
+        # Only close proxy_connection — client_connection is owned by the server
+        try:
+            self.proxy_connection.shutdown(socket.SHUT_RDWR)
+        except OSError:
+            pass
+        try:
+            self.proxy_connection.close()
+        except OSError:
+            pass
         try:
             self.selector.close()
         except OSError:

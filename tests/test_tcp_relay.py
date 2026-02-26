@@ -94,17 +94,21 @@ class TestTCPRelay(unittest.TestCase):
         relay.listen_and_relay()
         selector.close.assert_called()
 
-    def test_cleanup_closes_sockets_and_selector(self):
+    def test_cleanup_closes_proxy_and_selector_not_client(self):
         relay, client, proxy, selector = self._create_relay()
 
         relay._cleanup()
 
+        # Both sockets unregistered from selector
         selector.unregister.assert_any_call(client)
         selector.unregister.assert_any_call(proxy)
-        client.shutdown.assert_called_once_with(socket.SHUT_RDWR)
+        # Proxy socket shutdown and closed
         proxy.shutdown.assert_called_once_with(socket.SHUT_RDWR)
-        client.close.assert_called_once()
         proxy.close.assert_called_once()
+        # Client socket NOT closed — owned by server framework
+        client.shutdown.assert_not_called()
+        client.close.assert_not_called()
+        # Selector closed
         selector.close.assert_called_once()
 
     def test_send_data(self):
