@@ -1,6 +1,8 @@
+import socket as socket_module
 from socket import socket
 
 from ..models import DetailedAddress, BindAddress
+from ..utils.addresses import map_address_family_to_enum
 
 
 class BaseRelay:
@@ -23,10 +25,15 @@ class BaseRelay:
         """
         Sets the client address from client socket.
         """
+        peer = self.client_connection.getpeername()
+        try:
+            addr_type = map_address_family_to_enum(self.client_connection.family)
+        except ValueError:
+            addr_type = self.dst_address.address_type
         self.client_address = DetailedAddress(
-            *self.client_connection.getpeername(),
+            *peer,
             name="Client",
-            address_type=self.dst_address.address_type,
+            address_type=addr_type,
         )
 
     def set_proxy_address(self) -> None:
