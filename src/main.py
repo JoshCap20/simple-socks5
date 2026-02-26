@@ -31,8 +31,8 @@ def main(args: Namespace):
             except KeyboardInterrupt:
                 logger.info("Server shutting down...")
             finally:
-                tcp_server.server_close()
                 tcp_server.shutdown()
+                tcp_server.server_close()
                 logger.info("Server terminated.")
     except OSError as e:
         logger.error(f"Error starting server: {e}")
