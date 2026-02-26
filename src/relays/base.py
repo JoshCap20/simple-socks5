@@ -15,6 +15,7 @@ class BaseRelay:
     def __init__(self, connection: socket, dst_address: DetailedAddress):
         self.client_connection = connection
         self.dst_address = dst_address
+        self.proxy_address = None
         self.set_client_address()
 
     def listen_and_relay(self):
