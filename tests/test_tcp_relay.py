@@ -101,6 +101,8 @@ class TestTCPRelay(unittest.TestCase):
 
         selector.unregister.assert_any_call(client)
         selector.unregister.assert_any_call(proxy)
+        client.shutdown.assert_called_once_with(socket.SHUT_RDWR)
+        proxy.shutdown.assert_called_once_with(socket.SHUT_RDWR)
         client.close.assert_called_once()
         proxy.close.assert_called_once()
         selector.close.assert_called_once()
