@@ -77,7 +77,12 @@ class TCPProxyServer(StreamRequestHandler):
             self.server.shutdown_request(self.request)
             return
 
-        dst_request: Request = request_handler.parse_request()
+        try:
+            dst_request: Request = request_handler.parse_request()
+        except Exception:
+            logger.error("Failed to parse SOCKS5 request")
+            self._send_error_reply(generate_general_socks_server_failure_reply())
+            return
 
         peer = self.connection.getpeername()
         self.client_address: DetailedAddress = DetailedAddress(
