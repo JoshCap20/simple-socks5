@@ -69,9 +69,11 @@ class BaseHandler:
         try:
             header = self._recv_exact(4)
 
-            version, cmd, _, address_type = struct.unpack("!BBBB", header)
+            version, cmd, rsv, address_type = struct.unpack("!BBBB", header)
             if version != SOCKS_VERSION:
                 raise InvalidVersionError(version)
+            if rsv != 0x00:
+                raise InvalidRequestError(rsv)
 
             address: DetailedAddress = self._parse_address(address_type)
 

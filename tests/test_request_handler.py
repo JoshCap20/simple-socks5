@@ -211,6 +211,15 @@ class TestTCPRequestHandlerIPv4(unittest.TestCase):
         self.assertEqual(result.name, "ipv6host.example.com")
         self.assertEqual(result.address_type, AddressTypeCodes.IPv6)
 
+    @patch("socket.socket.recv")
+    def test_parse_request_rejects_nonzero_rsv(self, mock_recv):
+        """RFC 1928 requires RSV field to be 0x00."""
+        mock_recv.side_effect = [
+            struct.pack("!BBBB", 0x05, 0x01, 0x01, 0x01),  # RSV=0x01 (invalid)
+        ]
+        with self.assertRaises(InvalidRequestError):
+            self.handler.parse_request()
+
     def test_parse_address_invalid(self):
         with self.assertRaises(InvalidRequestError):
             self.handler._parse_address(0xFF)
