@@ -86,41 +86,28 @@ class TCPProxyServer(StreamRequestHandler):
         )
         self._log_connection(dst_request.address)
 
-        reply: bytes = None
-
         try:
             if dst_request.command == CommandCodes.CONNECT.value:
-                # CONNECT
-                reply = self.handle_connect(dst_request.address)
+                self.handle_connect(dst_request.address)
 
             elif dst_request.command == CommandCodes.BIND.value:
-                # TODO: BIND
-                reply = self.handle_bind(dst_request.address)
+                self.handle_bind(dst_request.address)
 
             elif dst_request.command == CommandCodes.UDP_ASSOCIATE.value:
-                # UDP ASSOCIATE
-                reply = self.handle_udp_associate(dst_request.address)
+                self.handle_udp_associate(dst_request.address)
 
             else:
-                # Invalid command
-                reply = generate_command_not_supported_reply()
+                self._send_error_reply(generate_command_not_supported_reply())
 
         except ConnectionRefusedError:
             logger.error(f"Connection refused: {dst_request.address}")
-            reply = generate_connection_refused_reply()
+            self._send_error_reply(generate_connection_refused_reply())
         except socket.gaierror:
             logger.error(f"Host unreachable: {dst_request.address}")
-            reply = generate_host_unreachable_reply()
+            self._send_error_reply(generate_host_unreachable_reply())
         except Exception as e:
             logger.error(f"Exception: {e}")
-            reply = generate_general_socks_server_failure_reply()
-
-        finally:
-            if reply is not None:
-                try:
-                    self.connection.sendall(reply)
-                except BrokenPipeError as e:
-                    logger.error(f"Error sending reply: {e}")
+            self._send_error_reply(generate_general_socks_server_failure_reply())
 
     def handle_connect(self, dst_address: DetailedAddress) -> None:
         """
@@ -154,12 +141,21 @@ class TCPProxyServer(StreamRequestHandler):
         # Start UDP relay
         udp_relay.listen_and_relay()
 
-    def handle_bind(self, address: DetailedAddress) -> bytes:
+    def handle_bind(self, address: DetailedAddress) -> None:
         """
         Handles BIND command.
         """
         logger.error("BIND command not supported")
-        return generate_command_not_supported_reply()
+        self._send_error_reply(generate_command_not_supported_reply())
+
+    def _send_error_reply(self, reply: bytes) -> None:
+        """
+        Sends an error reply to the client, handling broken pipe gracefully.
+        """
+        try:
+            self.connection.sendall(reply)
+        except BrokenPipeError as e:
+            logger.error(f"Error sending reply: {e}")
 
     def finish(self):
         """
