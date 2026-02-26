@@ -1,4 +1,5 @@
 import socket
+import threading
 from socketserver import StreamRequestHandler, ThreadingMixIn, TCPServer
 
 from .constants import CommandCodes
@@ -18,14 +19,35 @@ from .models import Request, DetailedAddress
 logger = get_logger(__name__)
 
 
+MAX_CONNECTIONS = 200
+
+
 class ThreadingTCPServer(ThreadingMixIn, TCPServer):
     """
-    A threading version of a TCP server.
+    A threading version of a TCP server with a connection limit.
 
     https://docs.python.org/3/library/socketserver.html#socketserver.ThreadingMixIn
     """
 
     daemon_threads = True
+    _connection_semaphore = threading.BoundedSemaphore(MAX_CONNECTIONS)
+
+    def process_request(self, request, client_address):
+        if self._connection_semaphore.acquire(blocking=False):
+            try:
+                super().process_request(request, client_address)
+            except Exception:
+                self._connection_semaphore.release()
+                raise
+        else:
+            logger.warning("Connection limit reached, rejecting connection")
+            self.shutdown_request(request)
+
+    def process_request_thread(self, request, client_address):
+        try:
+            super().process_request_thread(request, client_address)
+        finally:
+            self._connection_semaphore.release()
 
 
 class TCPProxyServer(StreamRequestHandler):
