@@ -1,4 +1,3 @@
-import select
 import socket
 import selectors
 
@@ -29,7 +28,11 @@ class TCPRelay(BaseRelay):
         """
         super().__init__(client_connection, dst_address)
         self.selector = selectors.DefaultSelector()
-        self.generate_proxy_connection()
+        try:
+            self.generate_proxy_connection()
+        except Exception:
+            self.selector.close()
+            raise
 
     def generate_proxy_connection(self) -> None:
         """
@@ -160,12 +163,17 @@ class TCPRelay(BaseRelay):
         for sock in [self.client_connection, self.proxy_connection]:
             try:
                 self.selector.unregister(sock)
-            except Exception as e:
-                logger.exception(f"Error unregistering socket: {e}")
-            finally:
-                try:
-                    sock.shutdown(socket.SHUT_RDWR)
-                except Exception as e:
-                    logger.exception(f"Error shutting down socket: {e}")
+            except (OSError, ValueError):
+                pass
+            try:
+                sock.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
+            try:
                 sock.close()
-        self.selector.close()
+            except OSError:
+                pass
+        try:
+            self.selector.close()
+        except OSError:
+            pass
