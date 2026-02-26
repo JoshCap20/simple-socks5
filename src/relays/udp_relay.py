@@ -24,9 +24,14 @@ class UDPRelay(BaseRelay):
         self.generate_proxy_connection()
 
     def generate_proxy_connection(self) -> None:
-        self.proxy_connection = generate_udp_socket(self.dst_address.address_type)
-        self.proxy_connection.bind(("", 0))  # Bind to any available port
-        self.proxy_connection.settimeout(UDP_RECV_TIMEOUT)
+        sock = generate_udp_socket(self.dst_address.address_type)
+        try:
+            sock.bind(("", 0))  # Bind to any available port
+            sock.settimeout(UDP_RECV_TIMEOUT)
+        except Exception:
+            sock.close()
+            raise
+        self.proxy_connection = sock
         self.set_proxy_address()
 
     def listen_and_relay(self):
@@ -44,7 +49,11 @@ class UDPRelay(BaseRelay):
                     )
                     continue
 
-                self._forward_packet(datagram, addr)
+                try:
+                    self._forward_packet(datagram, addr)
+                except (ValueError, KeyError) as e:
+                    logger.debug(f"(UDP) Dropped unsupported datagram from {addr}: {e}")
+                    continue
 
         except socket.timeout:
             logger.debug("UDP relay timed out waiting for data")
