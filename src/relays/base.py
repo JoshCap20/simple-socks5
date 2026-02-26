@@ -26,12 +26,14 @@ class BaseRelay:
         Sets the client address from client socket.
         """
         peer = self.client_connection.getpeername()
+        ip, port = peer[0], peer[1]
         try:
             addr_type = map_address_family_to_enum(self.client_connection.family)
         except ValueError:
             addr_type = self.dst_address.address_type
         self.client_address = DetailedAddress(
-            *peer,
+            ip=ip,
+            port=port,
             name="Client",
             address_type=addr_type,
         )
@@ -40,7 +42,8 @@ class BaseRelay:
         """
         Sets the proxy address from proxy socket.
         """
-        self.proxy_address = BindAddress(*self.proxy_connection.getsockname())
+        addr = self.proxy_connection.getsockname()
+        self.proxy_address = BindAddress(ip=addr[0], port=addr[1])
 
     def get_proxy_address(self) -> BindAddress:
         """

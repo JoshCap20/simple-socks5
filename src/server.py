@@ -79,8 +79,10 @@ class TCPProxyServer(StreamRequestHandler):
 
         dst_request: Request = request_handler.parse_request()
 
+        peer = self.connection.getpeername()
         self.client_address: DetailedAddress = DetailedAddress(
-            *self.connection.getpeername(),
+            ip=peer[0],
+            port=peer[1],
             name="Client",
             address_type=dst_request.address.address_type,
         )
